@@ -5,6 +5,16 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ## [Unreleased]
 
+### Added
+- **Kubernetes dashboard — namespace views & richer tables** (parity pass vs HyperDX's built-in
+  `/kubernetes` page, using only metrics present in a standard kubeletstats + k8s_cluster setup):
+  - **Namespace CPU (cores)** and **Namespace memory** time charts (sum of pod metrics per namespace).
+  - **Namespaces table** — phase / CPU / memory per namespace.
+  - **Nodes table** — ready / CPU / memory / uptime per node (complements the existing node charts).
+  - **Pods — status & resources** table consolidates the old restarts + pod-memory tables and adds
+    status (`k8s.pod.phase`), CPU-vs-limit %, memory-vs-limit %, and age (`k8s.pod.uptime`).
+  - Per-column `numberFormat` used so cores / bytes / percent render correctly in one table.
+
 ### Changed
 - **Roomier graphs** — chart tiles (`line`, `stacked_bar`, `heatmap`, `pie`) get an extra
   grid row of height for better readability; number/table/markdown tiles unchanged, `y` reflowed.
