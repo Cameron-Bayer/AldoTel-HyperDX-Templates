@@ -6,6 +6,8 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Changed
+- **Taller tiles** — every tile's height increased by 1 grid row across all 10 dashboards,
+  with `y` positions reflowed so nothing overlaps (KPIs 3→4, charts 4→5, tables 5→6).
 - **Number formatting consistency** — ratio "rates" now render as true percentages and all
   percentage stats show **3 decimal places** (`mantissa: 3`):
   - `exec-overview` Span/Log error-rate KPIs converted from `if(…,100,0)` to a `0–1` fraction

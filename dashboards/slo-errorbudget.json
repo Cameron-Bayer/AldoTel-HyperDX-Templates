@@ -8,7 +8,7 @@
   "tiles": [
     {
       "name": "Availability (SLI)",
-      "x": 0, "y": 0, "w": 8, "h": 3,
+      "x": 0, "y": 0, "w": 8, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -25,7 +25,7 @@
     },
     {
       "name": "Error rate (1 - SLI)",
-      "x": 8, "y": 0, "w": 8, "h": 3,
+      "x": 8, "y": 0, "w": 8, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -38,7 +38,7 @@
     },
     {
       "name": "Total server requests",
-      "x": 16, "y": 0, "w": 8, "h": 3,
+      "x": 16, "y": 0, "w": 8, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -50,7 +50,7 @@
     },
     {
       "name": "Availability over time (target 99.9%)",
-      "x": 0, "y": 3, "w": 12, "h": 4,
+      "x": 0, "y": 4, "w": 12, "h": 5,
       "config": {
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -66,7 +66,7 @@
     },
     {
       "name": "Good vs bad requests by service",
-      "x": 12, "y": 3, "w": 12, "h": 4,
+      "x": 12, "y": 4, "w": 12, "h": 5,
       "config": {
         "displayType": "stacked_bar",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -79,7 +79,7 @@
     },
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
-      "x": 0, "y": 7, "w": 12, "h": 5,
+      "x": 0, "y": 9, "w": 12, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -90,7 +90,7 @@
     },
     {
       "name": "Error-budget burn rate over time (>1 = burning too fast)",
-      "x": 12, "y": 7, "w": 12, "h": 5,
+      "x": 12, "y": 9, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -101,7 +101,7 @@
     },
     {
       "name": "Errors by service",
-      "x": 0, "y": 12, "w": 24, "h": 5,
+      "x": 0, "y": 15, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "sourceId": "{{TRACES_SOURCE_ID}}",
