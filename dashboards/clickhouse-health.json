@@ -41,7 +41,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_Query",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -60,7 +62,9 @@
             "aggFn": "max",
             "valueExpression": "Value",
             "metricName": "ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -93,7 +97,9 @@
             "aggFn": "max",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_ReadonlyReplica",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -115,7 +121,9 @@
             "aggFn": "max",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_MemoryTracking",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -147,7 +155,9 @@
             "valueExpression": "Value",
             "alias": "queries",
             "metricName": "ClickHouseProfileEvents_Query",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -167,7 +177,9 @@
             "valueExpression": "Value",
             "alias": "failed",
             "metricName": "ClickHouseProfileEvents_FailedQuery",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -187,7 +199,9 @@
             "valueExpression": "Value",
             "alias": "rows",
             "metricName": "ClickHouseProfileEvents_InsertedRows",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -207,14 +221,18 @@
             "valueExpression": "Value",
             "alias": "select",
             "metricName": "ClickHouseProfileEvents_SelectQuery",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "insert",
             "metricName": "ClickHouseProfileEvents_InsertQuery",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -245,7 +263,9 @@
             "valueExpression": "Value",
             "alias": "merges",
             "metricName": "ClickHouseMetrics_Merge",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -265,7 +285,9 @@
             "valueExpression": "Value",
             "alias": "mutations",
             "metricName": "ClickHouseMetrics_PartMutation",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -300,14 +322,18 @@
             "valueExpression": "Value",
             "alias": "from cache",
             "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "from source",
             "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromSourceBytes",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -331,7 +357,9 @@
             "valueExpression": "Value",
             "alias": "bytes",
             "metricName": "ClickHouseProfileEvents_AsyncInsertBytes",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

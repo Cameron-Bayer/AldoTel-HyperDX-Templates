@@ -6,14 +6,21 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Fixed
-- **Markdown section-header tiles broke the HyperDX UI** after import. The fix went through two
-  iterations; the final, verified approach is to author markdown tiles as **config tiles**
-  (`config:{displayType:'markdown', markdown}`). Verified live in MongoDB on 2.27.0 that this stores a
-  complete, savable builder config with an **empty** `source` (`{displayType:'markdown', markdown,
-  source:'', where:'', select:[], name}`). Empty `source` both passes the UI's save validation **and**
-  avoids the *"The data source for this tile no longer exists."* render error (an empty source is not
-  treated as missing). An interim attempt using `series:[{type:'markdown', content}]` was reverted
-  because that path stores `source:'markdown'`, which the UI flags as a missing data source.
+- **HyperDX UI could not save dashboards** ("can't save the dashboard") after import. Two
+  independent causes were found and fixed:
+  - **Markdown section-header tiles** must be authored as **config tiles**
+    (`config:{displayType:'markdown', markdown}`), not `series:[{type:'markdown', content}]`. Verified
+    live in MongoDB on 2.27.0 that the config form stores a complete, savable builder config with an
+    **empty** `source` (`{displayType:'markdown', markdown, source:'', where:'', select:[], name}`).
+    Empty `source` both passes the UI's save validation **and** avoids the *"The data source for this
+    tile no longer exists."* render error. The interim `series` form stored `source:'markdown'`, which
+    the UI flags as a missing data source.
+  - **Every `select` item now sets `where`/`whereLanguage`** (`where:""`, `whereLanguage:"sql"` when
+    there's no filter). The external import API maps these to internal `aggCondition`/
+    `aggConditionLanguage`; when omitted it stored `null` for both, which renders fine but the UI's
+    internal `SavedChartConfigSchema` rejects on save (those fields must be a string / `'sql'|'lucene'`).
+    Verified by validating every dashboard against the deployed `@hyperdx/common-utils` schema — all 10
+    now pass.
 
 ### Added
 - **Section headers across every dashboard** — each dashboard is now broken into labelled

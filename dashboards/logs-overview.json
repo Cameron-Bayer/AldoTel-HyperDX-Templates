@@ -46,7 +46,9 @@
         "select": [
           {
             "aggFn": "count",
-            "alias": "logs"
+            "alias": "logs",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

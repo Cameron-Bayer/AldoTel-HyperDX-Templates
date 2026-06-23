@@ -76,7 +76,7 @@ For `line/stacked_bar/table/number/pie` there are **two variants**:
 | `aggFn` | `count | sum | avg | min | max | quantile | count_distinct | last_value | any | none` |
 | `valueExpression` | column/expr to aggregate. **Omit for `count`; required otherwise.** For metrics use `"Value"`. |
 | `level` | percentile (e.g. `0.95`) — **only** with `aggFn:"quantile"`. |
-| `where` / `whereLanguage` | per-series filter; `whereLanguage` is `"lucene"` or `"sql"`. |
+| `where` / `whereLanguage` | per-series filter; `whereLanguage` is `"lucene"` or `"sql"`. **Always include both on every select item** (use `where:""`, `whereLanguage:"sql"` when there is no filter). If omitted, the external API stores `aggCondition:null`/`aggConditionLanguage:null`, which renders fine but makes the **HyperDX UI unable to save** the dashboard (the internal `SavedChartConfigSchema` requires these to be a string / `'sql'|'lucene'`, not null). Note the external field names are `where`/`whereLanguage`; the API maps them to internal `aggCondition`/`aggConditionLanguage` — do **not** author the internal names (they're ignored on input). |
 | `metricName` + `metricType` | **metrics sources only**. `metricType`: `gauge | sum | histogram`. |
 | `alias` | legend label. |
 

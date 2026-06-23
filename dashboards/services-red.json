@@ -226,7 +226,9 @@
           {
             "valueExpression": "Duration",
             "countExpression": "count()",
-            "heatmapScaleType": "log"
+            "heatmapScaleType": "log",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

@@ -41,7 +41,9 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_FailedQuery",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -68,7 +70,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_Query",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -91,7 +95,9 @@
             "aggFn": "max",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_MemoryTracking",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

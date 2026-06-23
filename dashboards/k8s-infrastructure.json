@@ -52,7 +52,9 @@
             "valueExpression": "Value",
             "alias": "cpu",
             "metricName": "k8s.node.cpu.usage",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -77,7 +79,9 @@
             "valueExpression": "Value",
             "alias": "memory",
             "metricName": "k8s.node.memory.usage",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -111,7 +115,9 @@
             "valueExpression": "Value",
             "alias": "ready",
             "metricName": "k8s.node.condition_ready",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -137,14 +143,18 @@
             "valueExpression": "Value",
             "alias": "used",
             "metricName": "k8s.node.filesystem.usage",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "last_value",
             "valueExpression": "Value",
             "alias": "capacity",
             "metricName": "k8s.node.filesystem.capacity",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -181,14 +191,18 @@
             "valueExpression": "Value",
             "alias": "available",
             "metricName": "k8s.deployment.available",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "last_value",
             "valueExpression": "Value",
             "alias": "desired",
             "metricName": "k8s.deployment.desired",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -209,7 +223,9 @@
             "valueExpression": "Value",
             "alias": "pods",
             "metricName": "k8s.pod.phase",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -248,7 +264,9 @@
             "valueExpression": "Value",
             "alias": "cpu vs limit",
             "metricName": "k8s.pod.cpu_limit_utilization",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -273,7 +291,9 @@
             "valueExpression": "Value",
             "alias": "mem vs limit",
             "metricName": "k8s.pod.memory_limit_utilization",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -305,7 +325,9 @@
             "valueExpression": "Value",
             "alias": "cpu",
             "metricName": "k8s.pod.cpu.usage",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -330,7 +352,9 @@
             "valueExpression": "Value",
             "alias": "memory",
             "metricName": "k8s.pod.memory.usage",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

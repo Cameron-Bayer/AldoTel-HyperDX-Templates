@@ -41,7 +41,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_ZooKeeperSession",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -60,7 +62,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_ZooKeeperWatch",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -79,7 +83,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_KeeperOutstandingRequests",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -106,7 +112,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_KeeperAliveConnections",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -137,28 +145,36 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperGetRequest",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "list",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperListRequest",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "create",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperCreateRequest",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "remove",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperRemoveRequest",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -178,14 +194,18 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperCommits",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "failed",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperCommitsFailed",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -205,14 +225,18 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperPacketsReceived",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "sent",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperPacketsSent",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -232,14 +256,18 @@
             "aggFn": "avg",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_ZooKeeperRequest",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "watches",
             "aggFn": "avg",
             "valueExpression": "Value",
             "metricName": "ClickHouseMetrics_ZooKeeperWatch",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -259,14 +287,18 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperCommitWaitElapsedMicroseconds",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "alias": "process_us",
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "ClickHouseProfileEvents_KeeperProcessElapsedMicroseconds",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }

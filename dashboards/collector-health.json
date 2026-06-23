@@ -42,7 +42,9 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "otelcol_receiver_refused_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -69,7 +71,9 @@
             "aggFn": "sum",
             "valueExpression": "Value",
             "metricName": "otelcol_receiver_failed_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -96,7 +100,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "otelcol_exporter_queue_size",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ],
         "colorRules": [
@@ -123,7 +129,9 @@
             "aggFn": "last_value",
             "valueExpression": "Value",
             "metricName": "otelcol_exporter_in_flight_requests",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -154,21 +162,27 @@
             "valueExpression": "Value",
             "alias": "accepted",
             "metricName": "otelcol_receiver_accepted_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "refused",
             "metricName": "otelcol_receiver_refused_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "failed",
             "metricName": "otelcol_receiver_failed_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -188,7 +202,9 @@
             "valueExpression": "Value",
             "alias": "sent",
             "metricName": "otelcol_exporter_sent_spans_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -208,14 +224,18 @@
             "valueExpression": "Value",
             "alias": "queue size",
             "metricName": "otelcol_exporter_queue_size",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "max",
             "valueExpression": "Value",
             "alias": "capacity",
             "metricName": "otelcol_exporter_queue_capacity",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -235,14 +255,18 @@
             "valueExpression": "Value",
             "alias": "incoming",
             "metricName": "otelcol_processor_incoming_items_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "outgoing",
             "metricName": "otelcol_processor_outgoing_items_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -273,14 +297,18 @@
             "valueExpression": "Value",
             "alias": "log records",
             "metricName": "otelcol_receiver_accepted_log_records_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "metric points",
             "metricName": "otelcol_receiver_accepted_metric_points_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -300,14 +328,18 @@
             "valueExpression": "Value",
             "alias": "scraped",
             "metricName": "otelcol_scraper_scraped_metric_points",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "sum",
             "valueExpression": "Value",
             "alias": "errored",
             "metricName": "otelcol_scraper_errored_metric_points",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -342,14 +374,18 @@
             "valueExpression": "Value",
             "alias": "rss",
             "metricName": "otelcol_process_memory_rss_bytes",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           },
           {
             "aggFn": "max",
             "valueExpression": "Value",
             "alias": "heap alloc",
             "metricName": "otelcol_process_runtime_heap_alloc_bytes",
-            "metricType": "gauge"
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
@@ -369,7 +405,9 @@
             "valueExpression": "Value",
             "alias": "cpu seconds",
             "metricName": "otelcol_process_cpu_seconds_total",
-            "metricType": "sum"
+            "metricType": "sum",
+            "where": "",
+            "whereLanguage": "sql"
           }
         ]
       }
