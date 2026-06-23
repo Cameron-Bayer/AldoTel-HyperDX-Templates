@@ -14,6 +14,9 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   - **Pods — status & resources** table consolidates the old restarts + pod-memory tables and adds
     status (`k8s.pod.phase`), CPU-vs-limit %, memory-vs-limit %, and age (`k8s.pod.uptime`).
   - Per-column `numberFormat` used so cores / bytes / percent render correctly in one table.
+  - Note: multi-metric builder tables can't be SQL-sorted by one metric's column (HyperDX appends
+    `orderBy` to every per-metric subquery), so these tables have no `orderBy` — sort by clicking a
+    column header in the UI.
 
 ### Changed
 - **Roomier graphs** — chart tiles (`line`, `stacked_bar`, `heatmap`, `pie`) get an extra

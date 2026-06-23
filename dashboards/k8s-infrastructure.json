@@ -42,7 +42,6 @@
         "displayType": "table",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "groupBy": "ResourceAttributes['k8s.node.name']",
-        "orderBy": "cpu DESC",
         "select": [
           { "aggFn": "avg", "valueExpression": "Value", "alias": "ready",
             "metricName": "k8s.node.condition_ready", "metricType": "gauge" },
@@ -99,13 +98,12 @@
       }
     },
     {
-      "name": "Pods — status & resources (top by restarts)",
+      "name": "Pods — status & resources",
       "x": 0, "y": 18, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "groupBy": "ResourceAttributes['k8s.pod.name']",
-        "orderBy": "restarts DESC",
         "select": [
           { "aggFn": "last_value", "valueExpression": "Value", "alias": "status",
             "metricName": "k8s.pod.phase", "metricType": "gauge" },
@@ -204,7 +202,6 @@
         "displayType": "table",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "groupBy": "ResourceAttributes['k8s.namespace.name']",
-        "orderBy": "cpu DESC",
         "select": [
           { "aggFn": "last_value", "valueExpression": "Value", "alias": "phase",
             "metricName": "k8s.namespace.phase", "metricType": "gauge" },
