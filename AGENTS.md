@@ -101,17 +101,23 @@ For `line/stacked_bar/table/number/pie` there are **two variants**:
 - **search** (raw log/event viewer): `select` is a **comma-separated string**
   (e.g. `"Timestamp, SeverityText, ServiceName, Body"`) + `where` + `whereLanguage` (required).
 - **markdown** (section headers / notes): author as a **config tile**:
-  `{ "name": "", "x":0, "y":.., "w":24, "h":2, "config": { "displayType":"markdown", "markdown":"### Title" } }`.
+  `{ "name": "", "x":0, "y":.., "w":24, "h":3, "config": { "displayType":"markdown", "markdown":"#### Title" } }`.
   ⚠️ Do **NOT** use the `series` form `series:[{ "type":"markdown", "content":"…" }]`. The series path runs
   through `translateExternalChartToTileConfig`, which stores `source:'markdown'` (a truthy placeholder). The
   UI then treats that source id as missing and shows *"The data source for this tile no longer exists."*
-  The `config` path runs through `convertToInternalTileConfig`, whose markdown case stores a **complete,
-  savable** builder config with an **empty** `source`: `{ displayType:'markdown', markdown, source:'',
-  where:'', select:[], name }`. Empty `source` is the key — it passes `SavedChartConfigSchema` (so the UI
-  can **save**) and is falsy so `isSourceMissing` is false (so it **renders** without the error). Verified
-  live in MongoDB on HyperDX 2.27.0: the config form stores `source:''`; the series form stores
-  `source:'markdown'`. Leave `name:""` to hide the tile's corner title (markdown renders left-aligned only —
-  no HTML/CSS/centering). On GET the API converts it back to `config:{displayType:'markdown', markdown}`.
+  The `config` path runs through `convertToInternalTileConfig`, whose markdown case stores
+  `{ displayType:'markdown', markdown, source:'', where:'', select:[], name }`. Empty `source` is falsy so
+  `isSourceMissing` is false (so it **renders** without the error). Verified live in MongoDB on HyperDX
+  2.27.0: the config form stores `source:''`; the series form stores `source:'markdown'`. Leave `name:""`
+  to hide the tile's corner title. Use `####` (h4) headings; single-line headers `h:3`, multiline notes
+  `h:6` so text isn't clipped. Markdown renders with a plain react-markdown — left-aligned only, no
+  HTML/CSS/centering. On GET the API converts it back to `config:{displayType:'markdown', markdown}`.
+  ⚠️ **In-place editability:** the import API **forces `source:''`** for markdown. A markdown tile with
+  empty `source` **cannot be saved from the tile editor** — `convertFormStateToSavedChartConfig` only
+  returns a savable config `if (source)` is truthy, so Save silently no-ops (no toast, no PATCH). To make a
+  header editable, patch its stored `config.source` in MongoDB to a **real, existing source id** (e.g. the
+  logs source). Graph tiles already have real sources and save normally. Customers importing via the API
+  get render-only headers — to change header text, edit the template JSON and re-import.
 
 ### 2.1 onClick drill-downs (table tiles only)
 `config.onClick` link-outs work **only on table tiles**. Two variants (`type`):

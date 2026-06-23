@@ -30,16 +30,16 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Nodes"
+        "markdown": "#### Nodes"
       }
     },
     {
       "name": "Node CPU usage (cores)",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -62,7 +62,7 @@
     {
       "name": "Node memory usage",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -89,7 +89,7 @@
     {
       "name": "Nodes — status, CPU, memory, uptime",
       "x": 0,
-      "y": 8,
+      "y": 9,
       "w": 14,
       "h": 6,
       "config": {
@@ -103,7 +103,7 @@
     {
       "name": "Nodes ready",
       "x": 14,
-      "y": 8,
+      "y": 9,
       "w": 10,
       "h": 6,
       "config": {
@@ -125,7 +125,7 @@
     {
       "name": "Node filesystem usage %",
       "x": 0,
-      "y": 14,
+      "y": 15,
       "w": 24,
       "h": 6,
       "config": {
@@ -162,18 +162,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 20,
+      "y": 21,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Pods"
+        "markdown": "#### Pods"
       }
     },
     {
       "name": "Deployment availability (ready / desired)",
       "x": 0,
-      "y": 22,
+      "y": 24,
       "w": 12,
       "h": 6,
       "config": {
@@ -210,7 +210,7 @@
     {
       "name": "Pods by phase",
       "x": 12,
-      "y": 22,
+      "y": 24,
       "w": 12,
       "h": 6,
       "config": {
@@ -233,7 +233,7 @@
     {
       "name": "Pods — status & resources",
       "x": 0,
-      "y": 28,
+      "y": 30,
       "w": 24,
       "h": 6,
       "config": {
@@ -247,7 +247,7 @@
     {
       "name": "Pod CPU vs limit %",
       "x": 0,
-      "y": 34,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {
@@ -274,7 +274,7 @@
     {
       "name": "Pod memory vs limit %",
       "x": 12,
-      "y": 34,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {
@@ -301,18 +301,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 40,
+      "y": 42,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Namespaces"
+        "markdown": "#### Namespaces"
       }
     },
     {
       "name": "Namespace CPU usage (cores)",
       "x": 0,
-      "y": 42,
+      "y": 45,
       "w": 12,
       "h": 6,
       "config": {
@@ -335,7 +335,7 @@
     {
       "name": "Namespace memory usage",
       "x": 12,
-      "y": 42,
+      "y": 45,
       "w": 12,
       "h": 6,
       "config": {
@@ -362,7 +362,7 @@
     {
       "name": "Namespaces — phase, CPU, memory",
       "x": 0,
-      "y": 48,
+      "y": 51,
       "w": 24,
       "h": 6,
       "config": {

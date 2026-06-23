@@ -10,11 +10,17 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   independent causes were found and fixed:
   - **Markdown section-header tiles** must be authored as **config tiles**
     (`config:{displayType:'markdown', markdown}`), not `series:[{type:'markdown', content}]`. Verified
-    live in MongoDB on 2.27.0 that the config form stores a complete, savable builder config with an
-    **empty** `source` (`{displayType:'markdown', markdown, source:'', where:'', select:[], name}`).
-    Empty `source` both passes the UI's save validation **and** avoids the *"The data source for this
-    tile no longer exists."* render error. The interim `series` form stored `source:'markdown'`, which
-    the UI flags as a missing data source.
+    live in MongoDB on 2.27.0 that the config form stores `{displayType:'markdown', markdown, source:'',
+    where:'', select:[], name:''}`. The interim `series` form stored `source:'markdown'`, which the UI
+    flags as a *"The data source for this tile no longer exists."* render error.
+  - **Markdown tile in-place editability:** the external import API **forces `source:''`** for markdown
+    tiles regardless of input. Empty `source` renders fine, but the tile editor's
+    `convertFormStateToSavedChartConfig` only returns a savable config `if (source)` is truthy — so a
+    markdown tile with empty `source` silently fails to save (Save button no-ops, no toast, no PATCH).
+    To make headers editable, the tile needs a **real, existing source id**. The deployed AldoTel
+    instance has all 33 markdown tiles patched in MongoDB to use the logs source id; non-markdown
+    (graph) tiles already have real sources and save normally. Customers importing via the API get
+    render-only headers (edit the template JSON + re-import to change header text).
   - **Every `select` item now sets `where`/`whereLanguage`** (`where:""`, `whereLanguage:"sql"` when
     there's no filter). The external import API maps these to internal `aggCondition`/
     `aggConditionLanguage`; when omitted it stored `null` for both, which renders fine but the UI's
@@ -28,9 +34,10 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   *Nodes / Pods / Namespaces*). Tiles were regrouped and reflowed under their section so related
   charts sit together and the boards read top-to-bottom instead of as one dense grid. KPI
   "at a glance" number rows are pulled to the top of each board where they weren't already.
-  Header tiles use an `h3` heading, a cleared tile title (no redundant corner label), and are
-  3 rows tall so the section text isn't clipped. (Note: HyperDX renders markdown tiles with a
-  plain react-markdown — no raw HTML/CSS — so headers stay left-aligned; centering isn't supported.)
+  Header tiles use an `h4` heading (`####`), a cleared tile title (no redundant corner label), and are
+  3 rows tall (multiline notes 6 rows) so the section text isn't clipped. (Note: HyperDX renders markdown
+  tiles with a plain react-markdown — no raw HTML/CSS — so headers stay left-aligned; centering isn't
+  supported.)
 - **Kubernetes dashboard — namespace views & richer tables** (parity pass vs HyperDX's built-in
   `/kubernetes` page, using only metrics present in a standard kubeletstats + k8s_cluster setup):
   - **Namespace CPU (cores)** and **Namespace memory** time charts (sum of pod metrics per namespace).

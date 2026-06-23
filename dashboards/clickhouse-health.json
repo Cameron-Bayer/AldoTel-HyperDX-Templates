@@ -21,16 +21,16 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Cluster health — at a glance"
+        "markdown": "#### Cluster health — at a glance"
       }
     },
     {
       "name": "Running queries",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -51,7 +51,7 @@
     {
       "name": "Max replication lag (s)",
       "x": 6,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -86,7 +86,7 @@
     {
       "name": "Readonly replicas",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -107,7 +107,7 @@
     {
       "name": "Memory tracking",
       "x": 18,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -131,18 +131,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Query activity"
+        "markdown": "#### Query activity"
       }
     },
     {
       "name": "Query rate (vs previous week)",
       "x": 0,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -165,7 +165,7 @@
     {
       "name": "Failed queries",
       "x": 12,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -187,7 +187,7 @@
     {
       "name": "Inserted rows rate",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -209,7 +209,7 @@
     {
       "name": "SELECT vs INSERT queries",
       "x": 12,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -240,18 +240,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 20,
+      "y": 22,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Merges & mutations"
+        "markdown": "#### Merges & mutations"
       }
     },
     {
       "name": "Merges in progress",
       "x": 0,
-      "y": 22,
+      "y": 25,
       "w": 12,
       "h": 6,
       "config": {
@@ -273,7 +273,7 @@
     {
       "name": "Mutations in progress",
       "x": 12,
-      "y": 22,
+      "y": 25,
       "w": 12,
       "h": 6,
       "config": {
@@ -295,18 +295,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 28,
+      "y": 31,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "### I/O & cache"
+        "markdown": "#### I/O & cache"
       }
     },
     {
       "name": "Page-cache read bytes: cache vs source",
       "x": 0,
-      "y": 30,
+      "y": 34,
       "w": 12,
       "h": 6,
       "config": {
@@ -341,7 +341,7 @@
     {
       "name": "Async insert bytes",
       "x": 12,
-      "y": 30,
+      "y": 34,
       "w": 12,
       "h": 6,
       "config": {
