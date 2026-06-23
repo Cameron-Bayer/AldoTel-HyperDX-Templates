@@ -1,26 +1,56 @@
 {
   "name": "AldoTel · ClickHouse — Storage & MergeTree",
-  "tags": ["clickstack-templates", "clickhouse", "tmpl:ch-storage"],
+  "tags": [
+    "clickstack-templates",
+    "clickhouse",
+    "tmpl:ch-storage"
+  ],
   "filters": [
-    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
-      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Instance",
+      "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}",
+      "sourceMetricType": "gauge",
+      "whereLanguage": "sql"
+    }
   ],
   "tiles": [
     {
+      "name": "Storage — at a glance",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Storage — at a glance"
+      }
+    },
+    {
       "name": "Disk used (active parts)",
-      "x": 0, "y": 0, "w": 6, "h": 4,
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
         "sqlTemplate": "SELECT sum(bytes_on_disk) FROM system.parts WHERE active"
       }
     },
     {
       "name": "Compression ratio (uncompressed / compressed)",
-      "x": 6, "y": 0, "w": 6, "h": 4,
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -31,7 +61,10 @@
     },
     {
       "name": "Active parts (total)",
-      "x": 12, "y": 0, "w": 6, "h": 4,
+      "x": 12,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -42,7 +75,10 @@
     },
     {
       "name": "Rows stored (active)",
-      "x": 18, "y": 0, "w": 6, "h": 4,
+      "x": 18,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -52,8 +88,22 @@
       }
     },
     {
+      "name": "Throughput & merges",
+      "x": 0,
+      "y": 6,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Throughput & merges"
+      }
+    },
+    {
       "name": "Part events / 5 min (inserts, merges, mutations)",
-      "x": 0, "y": 4, "w": 12, "h": 6,
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "configType": "sql",
@@ -64,31 +114,45 @@
     },
     {
       "name": "Merge duration p95 / max (ms)",
-      "x": 12, "y": 4, "w": 12, "h": 6,
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "duration" },
+        "numberFormat": {
+          "output": "duration"
+        },
         "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       quantile(0.95)(duration_ms) AS p95_ms,\n       max(duration_ms) AS max_ms\nFROM system.part_log\nWHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
       }
     },
     {
       "name": "Bytes written — inserted vs merged / 5 min",
-      "x": 0, "y": 10, "w": 12, "h": 6,
+      "x": 0,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
         "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       sumIf(size_in_bytes, event_type = 'NewPart') AS inserted_bytes,\n       sumIf(size_in_bytes, event_type = 'MergeParts') AS merged_bytes\nFROM system.part_log\nWHERE event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
       }
     },
     {
       "name": "Rows processed — inserted vs merged / 5 min",
-      "x": 12, "y": 10, "w": 12, "h": 6,
+      "x": 12,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -98,8 +162,22 @@
       }
     },
     {
+      "name": "Tables & parts",
+      "x": 0,
+      "y": 20,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Tables & parts"
+      }
+    },
+    {
       "name": "Largest tables by disk",
-      "x": 0, "y": 16, "w": 24, "h": 6,
+      "x": 0,
+      "y": 22,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -110,7 +188,10 @@
     },
     {
       "name": "Active parts per table (too-many-parts watch)",
-      "x": 0, "y": 22, "w": 24, "h": 6,
+      "x": 0,
+      "y": 28,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -121,7 +202,10 @@
     },
     {
       "name": "Recent merges (last 6h)",
-      "x": 0, "y": 28, "w": 24, "h": 6,
+      "x": 0,
+      "y": 34,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",

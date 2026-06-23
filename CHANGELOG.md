@@ -6,6 +6,11 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Added
+- **Section headers across every dashboard** — each dashboard is now broken into labelled
+  sections using full-width markdown header tiles (e.g. *At a glance*, *Throughput & latency*,
+  *Nodes / Pods / Namespaces*). Tiles were regrouped and reflowed under their section so related
+  charts sit together and the boards read top-to-bottom instead of as one dense grid. KPI
+  "at a glance" number rows are pulled to the top of each board where they weren't already.
 - **Kubernetes dashboard — namespace views & richer tables** (parity pass vs HyperDX's built-in
   `/kubernetes` page, using only metrics present in a standard kubeletstats + k8s_cluster setup):
   - **Namespace CPU (cores)** and **Namespace memory** time charts (sum of pod metrics per namespace).

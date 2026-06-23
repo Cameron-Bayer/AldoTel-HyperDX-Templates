@@ -1,139 +1,282 @@
 {
   "name": "AldoTel · ClickHouse — Keeper & Replication",
-  "tags": ["clickstack-templates", "clickhouse", "tmpl:ch-keeper"],
+  "tags": [
+    "clickstack-templates",
+    "clickhouse",
+    "tmpl:ch-keeper"
+  ],
   "filters": [
-    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
-      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Instance",
+      "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}",
+      "sourceMetricType": "gauge",
+      "whereLanguage": "sql"
+    }
   ],
   "tiles": [
     {
+      "name": "Keeper — at a glance",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Keeper — at a glance"
+      }
+    },
+    {
       "name": "Active sessions",
-      "x": 0, "y": 0, "w": 6, "h": 4,
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "last_value", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_ZooKeeperSession", "metricType": "gauge" }
+          {
+            "aggFn": "last_value",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_ZooKeeperSession",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
       "name": "Watches",
-      "x": 6, "y": 0, "w": 6, "h": 4,
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "last_value", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_ZooKeeperWatch", "metricType": "gauge" }
+          {
+            "aggFn": "last_value",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_ZooKeeperWatch",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
       "name": "Outstanding requests",
-      "x": 12, "y": 0, "w": 6, "h": 4,
+      "x": 12,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "last_value", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_KeeperOutstandingRequests", "metricType": "gauge" }
+          {
+            "aggFn": "last_value",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_KeeperOutstandingRequests",
+            "metricType": "gauge"
+          }
         ],
         "colorRules": [
-          { "operator": "gt", "value": 50, "color": "chart-warning", "label": "Backlog building" }
+          {
+            "operator": "gt",
+            "value": 50,
+            "color": "chart-warning",
+            "label": "Backlog building"
+          }
         ]
       }
     },
     {
       "name": "Alive connections",
-      "x": 18, "y": 0, "w": 6, "h": 4,
+      "x": 18,
+      "y": 2,
+      "w": 6,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "last_value", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_KeeperAliveConnections", "metricType": "gauge" }
+          {
+            "aggFn": "last_value",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_KeeperAliveConnections",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
+      "name": "Throughput & latency",
+      "x": 0,
+      "y": 6,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Throughput & latency"
+      }
+    },
+    {
       "name": "Keeper request rate by type",
-      "x": 0, "y": 4, "w": 12, "h": 6,
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "alias": "get", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperGetRequest", "metricType": "sum" },
-          { "alias": "list", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperListRequest", "metricType": "sum" },
-          { "alias": "create", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperCreateRequest", "metricType": "sum" },
-          { "alias": "remove", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperRemoveRequest", "metricType": "sum" }
+          {
+            "alias": "get",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperGetRequest",
+            "metricType": "sum"
+          },
+          {
+            "alias": "list",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperListRequest",
+            "metricType": "sum"
+          },
+          {
+            "alias": "create",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperCreateRequest",
+            "metricType": "sum"
+          },
+          {
+            "alias": "remove",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperRemoveRequest",
+            "metricType": "sum"
+          }
         ]
       }
     },
     {
       "name": "Commits vs failed commits",
-      "x": 12, "y": 4, "w": 12, "h": 6,
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "alias": "commits", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperCommits", "metricType": "sum" },
-          { "alias": "failed", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperCommitsFailed", "metricType": "sum" }
+          {
+            "alias": "commits",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperCommits",
+            "metricType": "sum"
+          },
+          {
+            "alias": "failed",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperCommitsFailed",
+            "metricType": "sum"
+          }
         ]
       }
     },
     {
       "name": "Packets received / sent",
-      "x": 0, "y": 10, "w": 12, "h": 6,
+      "x": 0,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "alias": "received", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperPacketsReceived", "metricType": "sum" },
-          { "alias": "sent", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperPacketsSent", "metricType": "sum" }
+          {
+            "alias": "received",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperPacketsReceived",
+            "metricType": "sum"
+          },
+          {
+            "alias": "sent",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperPacketsSent",
+            "metricType": "sum"
+          }
         ]
       }
     },
     {
       "name": "In-flight requests & watches",
-      "x": 12, "y": 10, "w": 12, "h": 6,
+      "x": 12,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "alias": "in_flight_requests", "aggFn": "avg", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_ZooKeeperRequest", "metricType": "gauge" },
-          { "alias": "watches", "aggFn": "avg", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_ZooKeeperWatch", "metricType": "gauge" }
+          {
+            "alias": "in_flight_requests",
+            "aggFn": "avg",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_ZooKeeperRequest",
+            "metricType": "gauge"
+          },
+          {
+            "alias": "watches",
+            "aggFn": "avg",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_ZooKeeperWatch",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
       "name": "Keeper commit-wait & process time (µs)",
-      "x": 0, "y": 16, "w": 12, "h": 6,
+      "x": 0,
+      "y": 20,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "alias": "commit_wait_us", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperCommitWaitElapsedMicroseconds", "metricType": "sum" },
-          { "alias": "process_us", "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_KeeperProcessElapsedMicroseconds", "metricType": "sum" }
+          {
+            "alias": "commit_wait_us",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperCommitWaitElapsedMicroseconds",
+            "metricType": "sum"
+          },
+          {
+            "alias": "process_us",
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_KeeperProcessElapsedMicroseconds",
+            "metricType": "sum"
+          }
         ]
       }
     },
     {
       "name": "Keeper / ZooKeeper errors (last 24h)",
-      "x": 12, "y": 16, "w": 12, "h": 5,
+      "x": 12,
+      "y": 20,
+      "w": 12,
+      "h": 5,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -144,7 +287,10 @@
     },
     {
       "name": "Replication",
-      "x": 0, "y": 22, "w": 24, "h": 3,
+      "x": 0,
+      "y": 26,
+      "w": 24,
+      "h": 3,
       "config": {
         "displayType": "markdown",
         "markdown": "### Replication\nThe tables below populate only on **replicated / clustered** ClickHouse installs (`ReplicatedMergeTree`). On a single-node ClickStack they are expected to be empty — that is healthy, not an error. Non-empty `replication_queue` rows or a growing `absolute_delay` indicate a replica falling behind."
@@ -152,7 +298,10 @@
     },
     {
       "name": "Replica status",
-      "x": 0, "y": 25, "w": 24, "h": 6,
+      "x": 0,
+      "y": 29,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -163,7 +312,10 @@
     },
     {
       "name": "Replication queue (stuck tasks)",
-      "x": 0, "y": 31, "w": 24, "h": 6,
+      "x": 0,
+      "y": 35,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",

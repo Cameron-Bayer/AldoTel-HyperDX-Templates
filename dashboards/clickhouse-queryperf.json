@@ -1,54 +1,118 @@
 {
   "name": "AldoTel · ClickHouse — Query Performance & Errors",
-  "tags": ["clickstack-templates", "clickhouse", "tmpl:clickhouse-queryperf"],
+  "tags": [
+    "clickstack-templates",
+    "clickhouse",
+    "tmpl:clickhouse-queryperf"
+  ],
   "filters": [
-    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
-      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "sum", "whereLanguage": "sql" }
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Instance",
+      "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}",
+      "sourceMetricType": "sum",
+      "whereLanguage": "sql"
+    }
   ],
   "tiles": [
     {
+      "name": "Query performance — at a glance",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Query performance — at a glance"
+      }
+    },
+    {
       "name": "Failed queries (rate)",
-      "x": 0, "y": 0, "w": 8, "h": 4,
+      "x": 0,
+      "y": 2,
+      "w": 8,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "sum", "valueExpression": "Value",
-            "metricName": "ClickHouseProfileEvents_FailedQuery", "metricType": "sum" }
+          {
+            "aggFn": "sum",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_FailedQuery",
+            "metricType": "sum"
+          }
         ],
         "colorRules": [
-          { "operator": "gt", "value": 0, "color": "chart-warning", "label": "Failures present" }
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Failures present"
+          }
         ]
       }
     },
     {
       "name": "Running queries (now)",
-      "x": 8, "y": 0, "w": 8, "h": 4,
+      "x": 8,
+      "y": 2,
+      "w": 8,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "select": [
-          { "aggFn": "last_value", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_Query", "metricType": "gauge" }
+          {
+            "aggFn": "last_value",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_Query",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
       "name": "Memory tracking",
-      "x": 16, "y": 0, "w": 8, "h": 4,
+      "x": 16,
+      "y": 2,
+      "w": 8,
+      "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
         "select": [
-          { "aggFn": "max", "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_MemoryTracking", "metricType": "gauge" }
+          {
+            "aggFn": "max",
+            "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_MemoryTracking",
+            "metricType": "gauge"
+          }
         ]
       }
     },
     {
+      "name": "Query trends",
+      "x": 0,
+      "y": 6,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Query trends"
+      }
+    },
+    {
       "name": "Query rate by kind",
-      "x": 0, "y": 4, "w": 12, "h": 6,
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "configType": "sql",
@@ -59,7 +123,10 @@
     },
     {
       "name": "Query duration p95 / p99 (ms)",
-      "x": 12, "y": 4, "w": 12, "h": 6,
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -70,7 +137,10 @@
     },
     {
       "name": "Peak memory per query p95 (bytes)",
-      "x": 0, "y": 10, "w": 12, "h": 6,
+      "x": 0,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -81,7 +151,10 @@
     },
     {
       "name": "Query exceptions",
-      "x": 12, "y": 10, "w": 12, "h": 6,
+      "x": 12,
+      "y": 14,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -91,8 +164,22 @@
       }
     },
     {
+      "name": "Slowest queries & errors",
+      "x": 0,
+      "y": 20,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Slowest queries & errors"
+      }
+    },
+    {
       "name": "Slowest queries (last 6h)",
-      "x": 0, "y": 16, "w": 24, "h": 6,
+      "x": 0,
+      "y": 22,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -103,7 +190,10 @@
     },
     {
       "name": "Top ClickHouse error codes (last 24h)",
-      "x": 0, "y": 22, "w": 24, "h": 6,
+      "x": 0,
+      "y": 28,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",

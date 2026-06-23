@@ -1,57 +1,123 @@
 {
   "name": "AldoTel · Logs — Overview",
-  "tags": ["clickstack-templates", "logs", "tmpl:logs-overview"],
+  "tags": [
+    "clickstack-templates",
+    "logs",
+    "tmpl:logs-overview"
+  ],
   "filters": [
-    { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",
-      "sourceId": "{{LOGS_SOURCE_ID}}", "whereLanguage": "sql" },
-    { "type": "QUERY_EXPRESSION", "name": "Severity", "expression": "SeverityText",
-      "sourceId": "{{LOGS_SOURCE_ID}}", "whereLanguage": "sql" }
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Service",
+      "expression": "ServiceName",
+      "sourceId": "{{LOGS_SOURCE_ID}}",
+      "whereLanguage": "sql"
+    },
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Severity",
+      "expression": "SeverityText",
+      "sourceId": "{{LOGS_SOURCE_ID}}",
+      "whereLanguage": "sql"
+    }
   ],
   "tiles": [
     {
+      "name": "Volume & error rate",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Volume & error rate"
+      }
+    },
+    {
       "name": "Log volume by severity",
-      "x": 0, "y": 0, "w": 12, "h": 6,
+      "x": 0,
+      "y": 2,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "groupBy": "SeverityText",
         "select": [
-          { "aggFn": "count", "alias": "logs" }
+          {
+            "aggFn": "count",
+            "alias": "logs"
+          }
         ]
       }
     },
     {
       "name": "Error / fatal rate by service",
-      "x": 12, "y": 0, "w": 12, "h": 6,
+      "x": 12,
+      "y": 2,
+      "w": 12,
+      "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "groupBy": "ServiceName",
         "select": [
-          { "aggFn": "count", "alias": "errors",
-            "where": "SeverityText:ERROR OR SeverityText:FATAL", "whereLanguage": "lucene" }
+          {
+            "aggFn": "count",
+            "alias": "errors",
+            "where": "SeverityText:ERROR OR SeverityText:FATAL",
+            "whereLanguage": "lucene"
+          }
         ]
       }
     },
     {
+      "name": "Top errors & patterns",
+      "x": 0,
+      "y": 8,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Top errors & patterns"
+      }
+    },
+    {
       "name": "Top error messages",
-      "x": 0, "y": 6, "w": 24, "h": 6,
+      "x": 0,
+      "y": 10,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "groupBy": "Body",
         "orderBy": "count DESC",
-        "onClick": { "type": "search", "target": { "mode": "id", "id": "{{LOGS_SOURCE_ID}}" },
-          "whereTemplate": "Body = '{{Body}}'", "whereLanguage": "sql" },
+        "onClick": {
+          "type": "search",
+          "target": {
+            "mode": "id",
+            "id": "{{LOGS_SOURCE_ID}}"
+          },
+          "whereTemplate": "Body = '{{Body}}'",
+          "whereLanguage": "sql"
+        },
         "select": [
-          { "aggFn": "count", "alias": "count",
-            "where": "SeverityText:ERROR OR SeverityText:FATAL", "whereLanguage": "lucene" }
+          {
+            "aggFn": "count",
+            "alias": "count",
+            "where": "SeverityText:ERROR OR SeverityText:FATAL",
+            "whereLanguage": "lucene"
+          }
         ]
       }
     },
     {
       "name": "New log patterns in last 24h (vs prior 7d)",
-      "x": 0, "y": 12, "w": 24, "h": 6,
+      "x": 0,
+      "y": 16,
+      "w": 24,
+      "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -61,8 +127,22 @@
       }
     },
     {
+      "name": "Live stream",
+      "x": 0,
+      "y": 22,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "## Live stream"
+      }
+    },
+    {
       "name": "Live error stream",
-      "x": 0, "y": 18, "w": 24, "h": 7,
+      "x": 0,
+      "y": 24,
+      "w": 24,
+      "h": 7,
       "config": {
         "displayType": "search",
         "sourceId": "{{LOGS_SOURCE_ID}}",
