@@ -23,12 +23,10 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Pipeline — at a glance"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Pipeline — at a glance"
+      }
     },
     {
       "name": "Refused spans (should be 0)",
@@ -136,12 +134,10 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Traces pipeline"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Traces pipeline"
+      }
     },
     {
       "name": "Spans: accepted vs refused vs failed",
@@ -257,12 +253,10 @@
       "y": 20,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Logs & metrics pipeline"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Logs & metrics pipeline"
+      }
     },
     {
       "name": "Accepted log records vs metric points",
@@ -324,12 +318,10 @@
       "y": 28,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Collector resources"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Collector resources"
+      }
     },
     {
       "name": "Collector memory (RSS / heap)",

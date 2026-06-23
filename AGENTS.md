@@ -100,15 +100,18 @@ For `line/stacked_bar/table/number/pie` there are **two variants**:
 - **pie**: exactly 1 select + `groupBy`.
 - **search** (raw log/event viewer): `select` is a **comma-separated string**
   (e.g. `"Timestamp, SeverityText, ServiceName, Body"`) + `where` + `whereLanguage` (required).
-- **markdown** (section headers / notes): author as a **series tile**, not a `config` tile:
-  `{ "name": "", "x":0, "y":.., "w":24, "h":2, "series": [{ "type": "markdown", "content": "### Title" }] }`.
-  ⚠️ Do **NOT** use `config: { displayType:"markdown", markdown:"…" }`. That shape imports and renders,
-  but the external API stores an **incomplete** internal config (no `source`/`select`/`where`), so the
-  HyperDX **UI cannot save** the dashboard afterwards ("can't save"). The `series` path runs through the
-  API's `translateExternalChartToTileConfig`, which fills `source:'markdown'`, `select:''`, `where:''`,
-  `name`, producing a config the UI's `TileSchema` accepts. Leave `name:""` to hide the tile's corner
-  title (markdown renders left-aligned only — no HTML/CSS/centering). On GET the API converts it back to
-  `config:{displayType:'markdown', markdown}` (lossy round-trip — that's expected).
+- **markdown** (section headers / notes): author as a **config tile**:
+  `{ "name": "", "x":0, "y":.., "w":24, "h":2, "config": { "displayType":"markdown", "markdown":"### Title" } }`.
+  ⚠️ Do **NOT** use the `series` form `series:[{ "type":"markdown", "content":"…" }]`. The series path runs
+  through `translateExternalChartToTileConfig`, which stores `source:'markdown'` (a truthy placeholder). The
+  UI then treats that source id as missing and shows *"The data source for this tile no longer exists."*
+  The `config` path runs through `convertToInternalTileConfig`, whose markdown case stores a **complete,
+  savable** builder config with an **empty** `source`: `{ displayType:'markdown', markdown, source:'',
+  where:'', select:[], name }`. Empty `source` is the key — it passes `SavedChartConfigSchema` (so the UI
+  can **save**) and is falsy so `isSourceMissing` is false (so it **renders** without the error). Verified
+  live in MongoDB on HyperDX 2.27.0: the config form stores `source:''`; the series form stores
+  `source:'markdown'`. Leave `name:""` to hide the tile's corner title (markdown renders left-aligned only —
+  no HTML/CSS/centering). On GET the API converts it back to `config:{displayType:'markdown', markdown}`.
 
 ### 2.1 onClick drill-downs (table tiles only)
 `config.onClick` link-outs work **only on table tiles**. Two variants (`type`):

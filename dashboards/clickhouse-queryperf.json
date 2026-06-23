@@ -22,12 +22,10 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Query performance — at a glance"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Query performance — at a glance"
+      }
     },
     {
       "name": "Failed queries (rate)",
@@ -104,12 +102,10 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Query trends"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Query trends"
+      }
     },
     {
       "name": "Query rate by kind",
@@ -173,12 +169,10 @@
       "y": 20,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Slowest queries & errors"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Slowest queries & errors"
+      }
     },
     {
       "name": "Slowest queries (last 6h)",

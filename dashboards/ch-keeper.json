@@ -22,12 +22,10 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Keeper — at a glance"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Keeper — at a glance"
+      }
     },
     {
       "name": "Active sessions",
@@ -119,12 +117,10 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Throughput & latency"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Throughput & latency"
+      }
     },
     {
       "name": "Keeper request rate by type",
@@ -295,12 +291,10 @@
       "y": 26,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Replication\nThe tables below populate only on **replicated / clustered** ClickHouse installs (`ReplicatedMergeTree`). On a single-node ClickStack they are expected to be empty — that is healthy, not an error. Non-empty `replication_queue` rows or a growing `absolute_delay` indicate a replica falling behind."
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Replication\nThe tables below populate only on **replicated / clustered** ClickHouse installs (`ReplicatedMergeTree`). On a single-node ClickStack they are expected to be empty — that is healthy, not an error. Non-empty `replication_queue` rows or a growing `absolute_delay` indicate a replica falling behind."
+      }
     },
     {
       "name": "Replica status",

@@ -28,12 +28,10 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Volume & error rate"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Volume & error rate"
+      }
     },
     {
       "name": "Log volume by severity",
@@ -79,12 +77,10 @@
       "y": 8,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Top errors & patterns"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Top errors & patterns"
+      }
     },
     {
       "name": "Top error messages",
@@ -136,12 +132,10 @@
       "y": 22,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Live stream"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Live stream"
+      }
     },
     {
       "name": "Live error stream",

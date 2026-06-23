@@ -22,12 +22,10 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Storage — at a glance"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Storage — at a glance"
+      }
     },
     {
       "name": "Disk used (active parts)",
@@ -95,12 +93,10 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Throughput & merges"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Throughput & merges"
+      }
     },
     {
       "name": "Part events / 5 min (inserts, merges, mutations)",
@@ -171,12 +167,10 @@
       "y": 20,
       "w": 24,
       "h": 2,
-      "series": [
-        {
-          "type": "markdown",
-          "content": "### Tables & parts"
-        }
-      ]
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Tables & parts"
+      }
     },
     {
       "name": "Largest tables by disk",

@@ -6,11 +6,14 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Fixed
-- **Dashboards could not be saved from the HyperDX UI** after importing the section headers.
-  Markdown tiles were authored as `config:{displayType:'markdown', markdown}`, which imports and
-  renders but stores an incomplete internal config (missing `source`/`select`/`where`) that the UI's
-  tile validation rejects on save. Re-authored all markdown header tiles as `series` tiles
-  (`series:[{type:'markdown', content}]`) so the API stores a complete, UI-savable config.
+- **Markdown section-header tiles broke the HyperDX UI** after import. The fix went through two
+  iterations; the final, verified approach is to author markdown tiles as **config tiles**
+  (`config:{displayType:'markdown', markdown}`). Verified live in MongoDB on 2.27.0 that this stores a
+  complete, savable builder config with an **empty** `source` (`{displayType:'markdown', markdown,
+  source:'', where:'', select:[], name}`). Empty `source` both passes the UI's save validation **and**
+  avoids the *"The data source for this tile no longer exists."* render error (an empty source is not
+  treated as missing). An interim attempt using `series:[{type:'markdown', content}]` was reverted
+  because that path stores `source:'markdown'`, which the UI flags as a missing data source.
 
 ### Added
 - **Section headers across every dashboard** — each dashboard is now broken into labelled
