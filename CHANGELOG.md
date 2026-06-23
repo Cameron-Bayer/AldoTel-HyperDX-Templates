@@ -27,6 +27,7 @@ Release candidate for the first customer-downloadable pack. 10 dashboards, verif
 - **Units & formatting** — bytes (`bytes_iec`), percent, and duration; `services-red` latency now
   formats as `duration` (auto-scales via the traces source `durationPrecision`).
 - **Naming/tagging** — stable `tmpl:<slug>` tag on every dashboard for idempotent upserts.
+- **Branding** — every dashboard name is prefixed `AldoTel · …` (shows in the HyperDX title bar/tab; no grid space used).
 
 ### Tooling
 - `preflight.ps1` / `preflight.sh` — compatibility check driven by `requirements.json`.

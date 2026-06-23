@@ -1,5 +1,5 @@
 {
-  "name": "ClickHouse — Storage & MergeTree",
+  "name": "AldoTel · ClickHouse — Storage & MergeTree",
   "tags": ["clickstack-templates", "clickhouse", "tmpl:ch-storage"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",

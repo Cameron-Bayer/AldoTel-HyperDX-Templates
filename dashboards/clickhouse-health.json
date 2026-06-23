@@ -1,5 +1,5 @@
 {
-  "name": "ClickHouse — Cluster Health",
+  "name": "AldoTel · ClickHouse — Cluster Health",
   "tags": ["clickstack-templates", "clickhouse", "tmpl:clickhouse-health"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",

@@ -1,5 +1,5 @@
 {
-  "name": "Services — RED (Rate / Errors / Duration)",
+  "name": "AldoTel · Services — RED (Rate / Errors / Duration)",
   "tags": ["clickstack-templates", "apm", "traces", "tmpl:services-red"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",

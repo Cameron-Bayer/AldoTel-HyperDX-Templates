@@ -1,5 +1,5 @@
 {
-  "name": "Executive Overview",
+  "name": "AldoTel · Executive Overview",
   "tags": ["clickstack-templates", "overview", "tmpl:exec-overview"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",

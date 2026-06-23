@@ -1,5 +1,5 @@
 {
-  "name": "OTel Collector — Pipeline Health",
+  "name": "AldoTel · OTel Collector — Pipeline Health",
   "tags": ["clickstack-templates", "collector", "otel", "tmpl:collector-health"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Collector", "expression": "ResourceAttributes['service.instance.id']",

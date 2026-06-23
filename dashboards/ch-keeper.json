@@ -1,5 +1,5 @@
 {
-  "name": "ClickHouse — Keeper & Replication",
+  "name": "AldoTel · ClickHouse — Keeper & Replication",
   "tags": ["clickstack-templates", "clickhouse", "tmpl:ch-keeper"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",

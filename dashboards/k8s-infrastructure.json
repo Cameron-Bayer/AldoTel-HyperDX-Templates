@@ -1,5 +1,5 @@
 {
-  "name": "Kubernetes — Infrastructure",
+  "name": "AldoTel · Kubernetes — Infrastructure",
   "tags": ["clickstack-templates", "kubernetes", "infra", "tmpl:k8s-infrastructure"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Namespace", "expression": "ResourceAttributes['k8s.namespace.name']",

@@ -1,5 +1,5 @@
 {
-  "name": "Logs — Overview",
+  "name": "AldoTel · Logs — Overview",
   "tags": ["clickstack-templates", "logs", "tmpl:logs-overview"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",

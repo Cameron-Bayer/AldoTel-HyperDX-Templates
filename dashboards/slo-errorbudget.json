@@ -1,5 +1,5 @@
 {
-  "name": "Services — SLO / Error Budget",
+  "name": "AldoTel · Services — SLO / Error Budget",
   "tags": ["clickstack-templates", "apm", "slo", "tmpl:slo-errorbudget"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",

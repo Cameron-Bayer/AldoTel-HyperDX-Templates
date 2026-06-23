@@ -1,5 +1,5 @@
 {
-  "name": "ClickHouse — Query Performance & Errors",
+  "name": "AldoTel · ClickHouse — Query Performance & Errors",
   "tags": ["clickstack-templates", "clickhouse", "tmpl:clickhouse-queryperf"],
   "filters": [
     { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
