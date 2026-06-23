@@ -42,7 +42,7 @@
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "asRatio": true,
-        "numberFormat": { "output": "percent" },
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "groupBy": "ResourceAttributes['k8s.deployment.name']",
         "select": [
           { "aggFn": "last_value", "valueExpression": "Value", "alias": "available",
@@ -101,7 +101,7 @@
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "asRatio": true,
-        "numberFormat": { "output": "percent" },
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "groupBy": "ResourceAttributes['k8s.node.name']",
         "select": [
           { "aggFn": "last_value", "valueExpression": "Value", "alias": "used",
@@ -117,7 +117,7 @@
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "percent" },
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "groupBy": "ResourceAttributes['k8s.pod.name']",
         "select": [
           { "aggFn": "max", "valueExpression": "Value", "alias": "cpu vs limit",
@@ -131,7 +131,7 @@
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "numberFormat": { "output": "percent" },
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "groupBy": "ResourceAttributes['k8s.pod.name']",
         "select": [
           { "aggFn": "max", "valueExpression": "Value", "alias": "mem vs limit",

@@ -55,7 +55,7 @@
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "asRatio": true,
-        "numberFormat": { "output": "percent", "mantissa": 2 },
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "select": [
           { "aggFn": "count", "alias": "good",
             "where": "SpanKind:Server AND NOT StatusCode:Error", "whereLanguage": "lucene" },

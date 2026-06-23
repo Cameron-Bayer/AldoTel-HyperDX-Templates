@@ -14,12 +14,13 @@
       "config": {
         "displayType": "number",
         "sourceId": "{{TRACES_SOURCE_ID}}",
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "select": [
-          { "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 100, 0)" }
+          { "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 1, 0)" }
         ],
         "colorRules": [
-          { "operator": "gt", "value": 1, "color": "chart-warning", "label": "Elevated" },
-          { "operator": "gt", "value": 5, "color": "chart-error", "label": "High" }
+          { "operator": "gt", "value": 0.01, "color": "chart-warning", "label": "Elevated" },
+          { "operator": "gt", "value": 0.05, "color": "chart-error", "label": "High" }
         ]
       }
     },
@@ -52,12 +53,13 @@
       "config": {
         "displayType": "number",
         "sourceId": "{{LOGS_SOURCE_ID}}",
+        "numberFormat": { "output": "percent", "mantissa": 3 },
         "select": [
-          { "aggFn": "avg", "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 100, 0)" }
+          { "aggFn": "avg", "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 1, 0)" }
         ],
         "colorRules": [
-          { "operator": "gt", "value": 1, "color": "chart-warning", "label": "Elevated" },
-          { "operator": "gt", "value": 5, "color": "chart-error", "label": "High" }
+          { "operator": "gt", "value": 0.01, "color": "chart-warning", "label": "Elevated" },
+          { "operator": "gt", "value": 0.05, "color": "chart-error", "label": "High" }
         ]
       }
     },

@@ -3,6 +3,23 @@
 All notable changes to the ClickStack dashboard templates are documented here.
 Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
+## [Unreleased]
+
+### Changed
+- **Number formatting consistency** — ratio "rates" now render as true percentages and all
+  percentage stats show **3 decimal places** (`mantissa: 3`):
+  - `exec-overview` Span/Log error-rate KPIs converted from `if(…,100,0)` to a `0–1` fraction
+    with `numberFormat: {output: percent, mantissa: 3}`; `colorRules` thresholds rescaled
+    (`1 → 0.01`, `5 → 0.05`) to match the raw fraction.
+  - `mantissa: 3` applied to existing percent tiles in `k8s-infrastructure` (×4),
+    `services-red` (error rate), and `slo-errorbudget` (availability).
+  - Throughput rates (req/s, query/s, packet/s, rows/s) left as counts — they are not percentages.
+
+### Known
+- The HyperDX v2 dashboards API **strips `colorRules`** from number tiles on import
+  (confirmed across all number tiles, including untouched ones). Color thresholds are kept in
+  the template JSON for UI use / future API support but do not currently persist via import.
+
 ## [1.0.0-rc1] — 2026-06-23
 
 Release candidate for the first customer-downloadable pack. 10 dashboards, verified live
