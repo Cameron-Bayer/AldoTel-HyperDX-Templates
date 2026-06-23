@@ -44,6 +44,17 @@ The importer resolves those at install time, so the JSON stays portable.
 > have data flowing (so you don't import a dashboard that renders empty). See
 > [Pre-flight](#pre-flight-will-it-work-here) below.
 
+### 0. Get the templates
+
+```bash
+git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
+cd AldoTel-HyperDX-Templates
+```
+
+> Or grab a pinned release from the [Releases](https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates/releases)
+> page / **Code → Download ZIP**. If your HyperDX API isn't already reachable, port-forward it first:
+> `kubectl port-forward -n clickstack svc/clickstack-app 8000:8000`.
+
 ### Windows (PowerShell)
 ```powershell
 $env:HDX_API_URL = "http://localhost:8000"
