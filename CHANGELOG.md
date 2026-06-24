@@ -6,6 +6,20 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Fixed
+- **Dashboard filters blanked tiles unexpectedly.** Two distinct causes were fixed:
+  - **Kubernetes — Namespace filter blanked the node tiles.** Node metrics (`k8s.node.*`) carry no
+    `k8s.namespace.name`, so a dashboard-global `namespace IN (...)` filter matched 0 rows and the
+    node charts went blank. The four node charts (CPU, memory, filesystem %, nodes-ready) are now
+    authored as **Raw SQL without the `$__filters` macro**, so they ignore the namespace filter and
+    always show the full cluster as context. The Pods and Namespaces tables gained `$__filters` so
+    they *do* honor the namespace filter, and the redundant **Node filter was removed** (it blanked
+    the deployment tile, which has no `k8s.node.name`).
+  - **Logs — "New log patterns" raw-SQL tile was always empty.** It filtered
+    `SeverityText IN ('ERROR','FATAL')` (uppercase) but log severities are stored lowercase
+    (`error`/`fatal`/…), so it never matched. Now uses `lower(SeverityText) IN ('error','fatal')`
+    and includes `$__filters` so it honors the Service/Severity dashboard filters. (Note: the
+    Logs Overview board is intentionally error-focused — filtering to a service with no ERROR/FATAL
+    logs correctly empties the error tiles while "Log volume by severity" still shows all data.)
 - **HyperDX UI could not save dashboards** ("can't save the dashboard") after import. Two
   independent causes were found and fixed:
   - **Markdown section-header tiles** must be authored as **config tiles**

@@ -57,6 +57,18 @@ For `line/stacked_bar/table/number/pie` there are **two variants**:
 - **Raw SQL**: set `configType: "sql"`, requires `connectionId` + `sqlTemplate`. Use for
   data-science tiles (§5).
 
+**Dashboard filters & raw SQL (`$__filters`).** Dashboard `filters[]` are **global** — HyperDX
+auto-injects them into every *builder* tile (regardless of which source the tile uses), but
+injects **nothing** into *Raw SQL* tiles unless the template contains the `$__filters` macro.
+`$__filters` expands to the active filter conditions (or `(1=1 /** no filters applied */)` when
+none) and must sit where the referenced columns are in scope. This is the only lever for raw SQL
+tiles: **add `$__filters`** to make a tile filter-aware, **omit it** to make a tile *immune* to a
+filter. There is **no per-tile filter opt-out** for builder tiles in 2.27.0 — to make a builder
+tile immune to a dashboard filter, convert it to Raw SQL without `$__filters`. Beware
+cross-scope contamination: a global filter on a column some tiles lack (e.g. `k8s.namespace.name`
+is absent from node metrics; `k8s.node.name` is absent from deployment metrics) will blank those
+tiles — make them immune or drop the filter.
+
 ### Builder example (line, metrics source)
 ```jsonc
 {
