@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/exec-overview.json` · tag `tmpl:exec-overview`
 - **Data required:** Application traces (OTLP), application/container logs, ClickHouse metrics and K8s metrics — this is a cross-cutting roll-up; tiles degrade gracefully when a given signal is absent
 
+## Preview
+
+![AldoTel · Executive Overview](images/exec-overview.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.
@@ -32,7 +38,7 @@ These apply to every compatible tile on the dashboard.
 ### Span latency p95 — number
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** quantile(`Duration / 1000000`)
+- **Measure(s):** quantile(`Duration / 1000000000`)
 - **Columns used:** `Duration`
 
 ### Log error rate (%) — number

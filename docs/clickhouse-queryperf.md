@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/clickhouse-queryperf.json` · tag `tmpl:clickhouse-queryperf`
 - **Data required:** ClickHouse metrics scraped into OTel (for the summary number tiles); Most tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled
 
+## Preview
+
+![AldoTel · ClickHouse — Query Performance & Errors](images/clickhouse-queryperf.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Query performance — at a glance
 
 ### Failed queries (rate) — number

@@ -5,7 +5,42 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ## [Unreleased]
 
+### Added
+- **Screenshots of all 10 dashboards** in the README (`docs/images/*.png`), captured against a live
+  open-source ClickStack (HyperDX 2.27) with the OpenTelemetry demo flowing — a visual preview of
+  what customers get after `import`.
+- **Preview image embedded at the top of every per-dashboard reference** (`docs/<slug>.md`), wired
+  into `gen-docs.js` so the screenshot is included automatically when `docs/images/<slug>.png` exists.
+
+### Changed
+- **`services-red` latency anomaly tile reworked into a causal rolling control chart.** The previous
+  tile computed a z-score with a **global** `avg()/stddevPop() OVER ()` across the whole 7-day
+  window, which had two statistical defects: the baseline was **contaminated by the very spike**
+  being detected, and a single whole-window mean/σ ignored normal variation. It now plots **p95
+  against a trailing baseline and ±3σ control band** computed over a **causal window that ends 1h
+  before each point** (`OVER (ORDER BY t ROWS BETWEEN 288 PRECEDING AND 12 PRECEDING)` = trailing
+  ~24h, skipping the last hour so an in-progress incident can't poison its own baseline). All four
+  series are in **ms on one axis**, so an anomaly reads as p95 crossing the upper band. Honors the
+  `Service` filter via `$__filters`; degrades gracefully (bands are null until ~24h of history).
+  Verified live against ClickHouse (HyperDX 2.27.0). Table/column doc regenerated via `gen-docs.js`.
+
 ### Fixed
+- **Latency/duration tiles were inflated ~1000×** — several tiles fed the raw span `Duration`
+  (nanoseconds) or ClickHouse `duration_ms` (milliseconds) straight into a `numberFormat` of
+  `{ "output": "duration" }`, whose base unit is **seconds**. p95 latencies rendered as
+  `44.08s` (actual ≈ 44 ms) and merge durations as `4.44h`. Fixed by converting the value to
+  seconds in the tile's `valueExpression` / SQL:
+  - **`exec-overview`** — Span latency p95 → `Duration / 1000000000`.
+  - **`services-red`** — Latency p50/p95/p99 line tile and Slowest routes (p95) table →
+    `Duration / 1000000000`. The table now formats **only** the `p95` column as a duration
+    (per-column `numberFormat`), leaving `requests` as a plain count.
+  - **`ch-storage`** — Merge duration tile → `duration_ms / 1000`; renamed to
+    "Merge duration — p95 / max".
+  - Two HyperDX quirks drove the fix: `numberFormat.factor` is **stripped on import**, and a
+    builder select with `whereLanguage: "lucene"` has its `valueExpression` **rebuilt from the
+    bare field** server-side (discarding the arithmetic) — so the affected selects use
+    `whereLanguage: "sql"` (`SpanKind = 'Server'`). Verified live (HyperDX 2.27.0): p95 axis reads
+    `100ms / 50ms / 0ms`, merge tile `16s / 8s / 0ms`.
 - **Full filter audit across all 10 dashboards** — dashboard filters in HyperDX are **global**
   (applied to every tile by column expression, regardless of the filter's declared `sourceId`),
   so a filter on a column that some tiles' data lacks silently blanks those tiles. Findings & fixes:

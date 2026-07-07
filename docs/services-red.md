@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/services-red.json` · tag `tmpl:services-red`
 - **Data required:** Application traces (OTLP)
 
+## Preview
+
+![AldoTel · Services — RED (Rate / Errors / Duration)](images/services-red.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.
@@ -35,7 +41,7 @@ These apply to every compatible tile on the dashboard.
 ### Latency p50 / p95 / p99 — line
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** quantile(`Duration`) as `p50`  — where `SpanKind:Server` (lucene); quantile(`Duration`) as `p95`  — where `SpanKind:Server` (lucene); quantile(`Duration`) as `p99`  — where `SpanKind:Server` (lucene)
+- **Measure(s):** quantile(`Duration / 1000000000`) as `p50`  — where `SpanKind = 'Server'` (sql); quantile(`Duration / 1000000000`) as `p95`  — where `SpanKind = 'Server'` (sql); quantile(`Duration / 1000000000`) as `p99`  — where `SpanKind = 'Server'` (sql)
 - **Columns used:** `Duration`, `SpanKind`
 
 ### Errors by status message — pie
@@ -50,13 +56,13 @@ These apply to every compatible tile on the dashboard.
 ### Slowest routes (p95) — table
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** quantile(`Duration`) as `p95`  — where `SpanKind:Server` (lucene); count(*) as `requests`  — where `SpanKind:Server` (lucene)
+- **Measure(s):** quantile(`Duration / 1000000000`) as `p95`  — where `SpanKind = 'Server'` (sql); count(*) as `requests`  — where `SpanKind = 'Server'` (sql)
 - **Group by:** `SpanAttributes['http.route']`
 - **Order by:** `p95 DESC`
 - **Drill-down:** click a row → opens search
 - **Columns used:** `SpanAttributes['http.route']`, `Duration`, `SpanKind`
 
-### Latency anomaly — p95 vs 7-day baseline (z-score) — line · Raw SQL
+### Latency anomaly — p95 vs rolling baseline (±3σ control band) — line · Raw SQL
 
 - **Tables:** `default.otel_traces`
 
@@ -67,13 +73,22 @@ WITH points AS (
   SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,
          quantile(0.95)(Duration)/1e6 AS p95_ms
   FROM default.otel_traces
-  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 7 DAY AND $__filters
+  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
   GROUP BY t
+),
+scored AS (
+  SELECT t, p95_ms,
+         avg(p95_ms)       OVER (ORDER BY t ROWS BETWEEN 288 PRECEDING AND 12 PRECEDING) AS base,
+         stddevPop(p95_ms) OVER (ORDER BY t ROWS BETWEEN 288 PRECEDING AND 12 PRECEDING) AS sigma
+  FROM points
 )
 SELECT t,
        p95_ms,
-       (p95_ms - avg(p95_ms) OVER ()) / nullIf(stddevPop(p95_ms) OVER (), 0) AS z_score
-FROM points
+       base AS baseline_ms,
+       base + 3 * sigma AS upper_ms,
+       greatest(base - 3 * sigma, 0) AS lower_ms
+FROM scored
+WHERE t >= now() - INTERVAL 24 HOUR
 ORDER BY t
 ```
 

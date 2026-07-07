@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/clickhouse-health.json` · tag `tmpl:clickhouse-health`
 - **Data required:** ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)
 
+## Preview
+
+![AldoTel · ClickHouse — Cluster Health](images/clickhouse-health.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Cluster health — at a glance
 
 ### Running queries — number

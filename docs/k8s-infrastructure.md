@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/k8s-infrastructure.json` · tag `tmpl:k8s-infrastructure`
 - **Data required:** kubeletstats receiver; k8s_cluster receiver
 
+## Preview
+
+![AldoTel · Kubernetes — Infrastructure](images/k8s-infrastructure.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.

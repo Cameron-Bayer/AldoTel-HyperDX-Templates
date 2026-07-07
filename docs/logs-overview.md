@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/logs-overview.json` · tag `tmpl:logs-overview`
 - **Data required:** Application/container logs (filelog or OTLP)
 
+## Preview
+
+![AldoTel · Logs — Overview](images/logs-overview.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.

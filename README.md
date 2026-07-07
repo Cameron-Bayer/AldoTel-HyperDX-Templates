@@ -17,6 +17,38 @@ enable only what they run.
 | `dashboards/ch-keeper.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
 | `dashboards/exec-overview.json` | One landing page: cross-domain KPI tiles (span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
 
+## Screenshots
+
+Captured against a live **open-source ClickStack** (HyperDX 2.27) with the OpenTelemetry
+demo app flowing — this is what lands after you run `import`. Click any image for full size.
+
+**Executive Overview** — the cross-domain landing page:
+
+[![Executive Overview](docs/images/exec-overview.png)](docs/images/exec-overview.png)
+
+<table>
+<tr>
+<td width="50%"><b>Services — RED (Rate / Errors / Duration)</b><br><a href="docs/images/services-red.png"><img src="docs/images/services-red.png" alt="Services — RED"></a></td>
+<td width="50%"><b>Services — SLO / Error Budget</b><br><a href="docs/images/slo-errorbudget.png"><img src="docs/images/slo-errorbudget.png" alt="Services — SLO / Error Budget"></a></td>
+</tr>
+<tr>
+<td width="50%"><b>Logs — Overview</b><br><a href="docs/images/logs-overview.png"><img src="docs/images/logs-overview.png" alt="Logs — Overview"></a></td>
+<td width="50%"><b>Kubernetes — Infrastructure</b><br><a href="docs/images/k8s-infrastructure.png"><img src="docs/images/k8s-infrastructure.png" alt="Kubernetes — Infrastructure"></a></td>
+</tr>
+<tr>
+<td width="50%"><b>OTel Collector — Pipeline Health</b><br><a href="docs/images/collector-health.png"><img src="docs/images/collector-health.png" alt="OTel Collector — Pipeline Health"></a></td>
+<td width="50%"><b>ClickHouse — Cluster Health</b><br><a href="docs/images/clickhouse-health.png"><img src="docs/images/clickhouse-health.png" alt="ClickHouse — Cluster Health"></a></td>
+</tr>
+<tr>
+<td width="50%"><b>ClickHouse — Query Performance & Errors</b><br><a href="docs/images/clickhouse-queryperf.png"><img src="docs/images/clickhouse-queryperf.png" alt="ClickHouse — Query Performance & Errors"></a></td>
+<td width="50%"><b>ClickHouse — Storage & MergeTree</b><br><a href="docs/images/ch-storage.png"><img src="docs/images/ch-storage.png" alt="ClickHouse — Storage & MergeTree"></a></td>
+</tr>
+<tr>
+<td width="50%"><b>ClickHouse — Keeper & Replication</b><br><a href="docs/images/ch-keeper.png"><img src="docs/images/ch-keeper.png" alt="ClickHouse — Keeper & Replication"></a></td>
+<td width="50%"></td>
+</tr>
+</table>
+
 ## Why these "just work": the schema contract
 
 A HyperDX dashboard does not contain data — every tile points at a **Source** (Logs / Traces /
@@ -163,8 +195,10 @@ re-scope. What each exposes:
 
 Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond static charts:
 
-- **`services-red` → latency anomaly:** computes a 7-day rolling **z-score** of p95 latency, so a
-  spike is flagged relative to its own baseline rather than a static threshold.
+- **`services-red` → latency anomaly:** plots p95 latency against a **causal rolling baseline
+  with ±3σ control bands** (trailing ~24h window that ends 1h before each point), so a spike is
+  flagged relative to its own recent baseline rather than a static threshold — and an in-progress
+  incident can't poison the baseline it's measured against.
 - **`logs-overview` → new log patterns:** normalizes error bodies (digits/IDs → placeholders) and
   surfaces patterns that appeared in the **last 24h but never in the prior 7 days** — a cheap
   Drain-style "what's new since the deploy?" detector.

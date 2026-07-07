@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/ch-storage.json` · tag `tmpl:ch-storage`
 - **Data required:** All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)
 
+## Preview
+
+![AldoTel · ClickHouse — Storage & MergeTree](images/ch-storage.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Storage — at a glance
 
 ### Disk used (active parts) — number · Raw SQL
@@ -78,7 +84,7 @@ ORDER BY t
 
 </details>
 
-### Merge duration p95 / max (ms) — line · Raw SQL
+### Merge duration — p95 / max — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
@@ -86,8 +92,8 @@ ORDER BY t
 
 ```sql
 SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,
-       quantile(0.95)(duration_ms) AS p95_ms,
-       max(duration_ms) AS max_ms
+       quantile(0.95)(duration_ms) / 1000 AS p95,
+       max(duration_ms) / 1000 AS max
 FROM system.part_log
 WHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR
 GROUP BY t

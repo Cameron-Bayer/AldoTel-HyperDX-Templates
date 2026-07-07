@@ -104,7 +104,7 @@
       }
     },
     {
-      "name": "Merge duration p95 / max (ms)",
+      "name": "Merge duration — p95 / max",
       "x": 12,
       "y": 10,
       "w": 12,
@@ -117,7 +117,7 @@
         "numberFormat": {
           "output": "duration"
         },
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       quantile(0.95)(duration_ms) AS p95_ms,\n       max(duration_ms) AS max_ms\nFROM system.part_log\nWHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       quantile(0.95)(duration_ms) / 1000 AS p95,\n       max(duration_ms) / 1000 AS max\nFROM system.part_log\nWHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
       }
     },
     {

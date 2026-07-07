@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/collector-health.json` · tag `tmpl:collector-health`
 - **Data required:** OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)
 
+## Preview
+
+![AldoTel · OTel Collector — Pipeline Health](images/collector-health.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.

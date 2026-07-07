@@ -7,6 +7,12 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 - **Template:** `dashboards/slo-errorbudget.json` · tag `tmpl:slo-errorbudget`
 - **Data required:** Application traces (OTLP) with server spans and StatusCode
 
+## Preview
+
+![AldoTel · Services — SLO / Error Budget](images/slo-errorbudget.png)
+
+_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
 ## Dashboard filters
 
 These apply to every compatible tile on the dashboard.

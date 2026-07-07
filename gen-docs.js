@@ -135,6 +135,7 @@ function renderTile(t) {
 
 function renderDashboard(file, dash) {
   const req = reqByFile[file] || {};
+  const slug = file.replace(/\.json$/, '');
   const tmpl = (dash.tags || []).find((t) => t.startsWith('tmpl:')) || '';
   const out = [`# ${dash.name}`, ''];
   out.push('> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).', '',
@@ -142,6 +143,13 @@ function renderDashboard(file, dash) {
   out.push(`- **Template:** ${code('dashboards/' + file)}${tmpl ? ` · tag ${code(tmpl)}` : ''}`);
   if (req.receivers && req.receivers.length) out.push(`- **Data required:** ${req.receivers.join('; ')}`);
   out.push('');
+
+  // Embed the live preview screenshot when one exists (docs/images/<slug>.png).
+  if (fs.existsSync(path.join(outDir, 'images', slug + '.png'))) {
+    out.push('## Preview', '',
+      `![${dash.name}](images/${slug}.png)`, '',
+      '_Live capture from a ClickStack install with the OpenTelemetry demo flowing._', '');
+  }
 
   // Dashboard-level (global) filters.
   const filters = dash.filters || [];
