@@ -45,6 +45,10 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── validate.js               Validates panel SQL against live ClickHouse
 │   └── docker-compose.yml        Throwaway Grafana for authoring/preview
 │
+├── testdata/                   🧪 Test-data generator (OTel Demo → ClickStack)
+│   ├── README.md                 Deploy the demo app to populate trace/error dashboards
+│   └── otel-demo.values.yaml     Helm values pointing the demo at your in-cluster collector
+│
 ├── CHANGELOG.md · VERSION
 └── README.md                   ← you are here
 ```

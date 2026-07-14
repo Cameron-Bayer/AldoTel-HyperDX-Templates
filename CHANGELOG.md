@@ -15,6 +15,17 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 - **Removed** the unused `exports/logs-overview.json` (a stale duplicate not referenced anywhere).
 
 ### Added
+- **`testdata/`** — test-data generator that deploys the **OpenTelemetry Demo** app (via Helm)
+  and points its OTLP exporter at the in-cluster ClickStack collector, producing application
+  **traces** (server/client spans, Error statuses) and **severity-tagged logs**. This populates
+  the trace- and error-driven dashboards (Services RED, SLO / Error Budget, Executive Overview,
+  Logs error tiles), which stay empty on a stock ClickStack install that only ships infrastructure
+  telemetry. Includes `otel-demo.values.yaml` + a README with deploy/verify/teardown steps.
+- **`hyperdx/inventory.ps1`** — dumps a complete inventory of everything flowing into ClickStack
+  (every metric name with counts, all log severities + log/resource attribute keys, and all trace
+  services / span kinds / status codes / span names / attribute keys) into one shareable text file,
+  so dashboards can be tailored to exactly what an environment emits. Uses `kubectl exec` by default
+  (no port-forward; in-cluster `default` user), with an optional `CH_URL` HTTP mode.
 - **`hyperdx/list-metrics.ps1` / `list-metrics.sh`** — metric-name discovery + diagnosis. When
   `preflight` reports a required/optional metric as MISS, this enumerates the metric names that
   actually exist in ClickHouse (resolving the schema from the HyperDX API) and fuzzy-matches every

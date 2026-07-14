@@ -1,0 +1,57 @@
+# OpenTelemetry Demo -> ClickStack (in-cluster) — test-data generator
+#
+# Deploys the OpenTelemetry Demo microservice app (frontend, cart, checkout,
+# product-catalog, etc.) and ships its traces, logs, and metrics to the
+# ClickStack OTel collector already running in your cluster. Use this to
+# generate realistic APPLICATION telemetry (server/client spans, Error
+# statuses, error/warn logs) so the trace- and error-driven dashboards
+# (Services RED, SLO / Error Budget, Executive Overview, Logs error tiles)
+# have data to render.
+#
+# The exporter targets the in-cluster collector service that ships with the
+# ClickStack app Helm release named "clickstack". If your app release uses a
+# different name/namespace, update the endpoint host accordingly:
+#   http://<release>-otel-collector.<namespace>.svc.cluster.local:4318
+#
+# In-cluster OTLP needs no auth on a default OSS ClickStack install. If your
+# collector requires an ingestion key, add a header under otlphttp/clickstack:
+#   headers: { authorization: "<your ingestion api key>" }
+
+opensearch: { enabled: false }
+jaeger:     { enabled: false }
+grafana:    { enabled: false }
+prometheus: { enabled: false }
+
+# Trim memory limits on the two heaviest optional services so the demo fits
+# comfortably on a single-node / edge cluster.
+components:
+  ad:
+    resources:
+      limits:
+        memory: 600Mi
+  fraud-detection:
+    resources:
+      limits:
+        memory: 600Mi
+
+opentelemetry-collector:
+  config:
+    exporters:
+      otlphttp/clickstack:
+        endpoint: http://clickstack-otel-collector.clickstack.svc.cluster.local:4318
+        compression: gzip
+    service:
+      pipelines:
+        traces:
+          receivers:  [otlp, jaeger, zipkin]
+          exporters:  [otlphttp/clickstack]
+        metrics:
+          receivers:  [otlp]
+          exporters:  [otlphttp/clickstack]
+        logs:
+          receivers:  [otlp]
+          exporters:  [otlphttp/clickstack]
+      telemetry:
+        metrics:
+          level: none
+          readers: []
