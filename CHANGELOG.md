@@ -22,6 +22,14 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   into `gen-docs.js` so the screenshot is included automatically when `docs/images/<slug>.png` exists.
 
 ### Changed
+- **`clickhouse-queryperf` metric labels & units clarified** to reduce customer confusion. The
+  `Failed queries (rate)` number tile was renamed to **`Failed queries`** — it reports the failure
+  count over the selected window (an auto-rated OTel Sum), not a per-second rate, and now matches the
+  `ClickHouse failed queries` tile on the Executive Overview. `Query duration p95 / p99 (ms)` became
+  **`Query duration — p95 / p99`** and now formats its Y axis as a **duration** (e.g. `24s / 12s`
+  instead of a bare `14K`), converting `query_duration_ms` to seconds. `Peak memory per query p95
+  (bytes)` became **`Peak memory per query — p95 / max`** with a **byte** axis (e.g. `172 MiB`
+  instead of `180M`). Verified live on HyperDX 2.27.0.
 - **`services-red` latency anomaly tile reworked into a causal rolling control chart.** The previous
   tile computed a z-score with a **global** `avg()/stddevPop() OVER ()` across the whole 7-day
   window, which had two statistical defects: the baseline was **contaminated by the very spike**

@@ -15,7 +15,7 @@ _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Query performance — at a glance
 
-### Failed queries (rate) — number
+### Failed queries — number
 
 - **Source / table:** Metrics → `default.otel_metrics_sum`
 - **Metric(s):** `ClickHouseProfileEvents_FailedQuery`  (column `MetricName`)
@@ -57,7 +57,7 @@ ORDER BY t
 
 </details>
 
-### Query duration p95 / p99 (ms) — line · Raw SQL
+### Query duration — p95 / p99 — line · Raw SQL
 
 - **Tables:** `system.query_log`
 
@@ -65,8 +65,8 @@ ORDER BY t
 
 ```sql
 SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
-       quantile(0.95)(query_duration_ms) AS p95_ms,
-       quantile(0.99)(query_duration_ms) AS p99_ms
+       quantile(0.95)(query_duration_ms) / 1000 AS p95,
+       quantile(0.99)(query_duration_ms) / 1000 AS p99
 FROM system.query_log
 WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
 GROUP BY t
@@ -75,7 +75,7 @@ ORDER BY t
 
 </details>
 
-### Peak memory per query p95 (bytes) — line · Raw SQL
+### Peak memory per query — p95 / max — line · Raw SQL
 
 - **Tables:** `system.query_log`
 
@@ -83,8 +83,8 @@ ORDER BY t
 
 ```sql
 SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
-       quantile(0.95)(memory_usage) AS p95_bytes,
-       max(memory_usage) AS max_bytes
+       quantile(0.95)(memory_usage) AS p95,
+       max(memory_usage) AS max
 FROM system.query_log
 WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
 GROUP BY t

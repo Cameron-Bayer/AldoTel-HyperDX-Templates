@@ -1,0 +1,44 @@
+# ClickStack Grafana alerts — contact points
+# ----------------------------------------------------------------------------
+# Defines WHERE alert notifications are sent. The default channel is Microsoft
+# Teams, matching the HyperDX alerts pack (../../alerts). This file is ADDITIVE:
+# it adds a contact point named "ClickStack Teams" without touching any contact
+# points you already have.
+#
+# TO USE:
+#   1. In Teams, add an "Incoming Webhook" connector to the target channel and
+#      copy the webhook URL.
+#   2. Replace the url below with that webhook URL.
+#
+# Prefer email / Slack / PagerDuty instead? Comment out the teams receiver and
+# uncomment one of the examples at the bottom (or add your own — any Grafana
+# contact point type works). Then point the notification policy
+# (notification-policy.yaml) at the receiver name you keep.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: ClickStack Teams
+    receivers:
+      - uid: clickstack-teams
+        type: teams
+        disableResolveMessage: false
+        settings:
+          url: https://REPLACE-WITH-YOUR-TEAMS-INCOMING-WEBHOOK-URL
+
+  # --- Alternative examples (optional) ------------------------------------
+  # - orgId: 1
+  #   name: ClickStack Email
+  #   receivers:
+  #     - uid: clickstack-email
+  #       type: email
+  #       settings:
+  #         addresses: oncall@yourcompany.com
+  #
+  # - orgId: 1
+  #   name: ClickStack Slack
+  #   receivers:
+  #     - uid: clickstack-slack
+  #       type: slack
+  #       settings:
+  #         url: https://hooks.slack.com/services/REPLACE/ME

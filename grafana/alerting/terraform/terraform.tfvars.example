@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored by
+# convention — do NOT commit real tokens or webhook URLs.
+
+grafana_url  = "https://YOUR-ORG.grafana.net"        # or http://localhost:3000
+grafana_auth = "glsa_XXXXXXXXXXXXXXXXXXXX"           # service account token
+
+# The ClickHouse data source must already exist in Grafana. Put its UID here.
+clickhouse_datasource_uid = "clickstack-ch"
+clickhouse_database       = "default"
+
+# Teams Workflow webhook (Teams channel > Workflows > "Post to a channel when a
+# webhook request is received").
+teams_webhook_url = "https://prod-XX.westus.logic.azure.com:443/workflows/....."
+
+# Optional: override the default thresholds.
+# error_rate_pct         = 5
+# p95_latency_ms         = 2000
+# error_log_rate_per_sec = 5

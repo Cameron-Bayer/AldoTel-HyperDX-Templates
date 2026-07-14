@@ -1,0 +1,343 @@
+# ClickStack Grafana alerts — alert rules
+# ============================================================================
+# Six high-signal alert rules that query the SAME ClickHouse tables ClickStack
+# writes (otel_traces / otel_logs / otel_metrics_gauge). They mirror the signal
+# set of the HyperDX alerts pack (../../alerts) but evaluate natively in Grafana
+# so notifications, silences and on-call routing all live in one place.
+#
+# ----------------------------------------------------------------------------
+# DATASOURCE UID  (important for portability)
+# ----------------------------------------------------------------------------
+# Every query below references  datasourceUid: clickstack-ch . When you add the
+# ClickHouse datasource in YOUR Grafana, set its UID to  clickstack-ch
+# (Connections > Data sources > ClickHouse > "UID" field), OR find/replace
+# "clickstack-ch" in this file with your datasource's UID. The dev harness
+# datasource (provisioning/datasources/clickhouse.yaml) already uses this UID.
+#
+# ----------------------------------------------------------------------------
+# HOW EACH RULE IS BUILT (A / B / C pattern)
+# ----------------------------------------------------------------------------
+#   A = ClickHouse SQL query, returns one numeric "value" per series (per
+#       service where relevant). The query window is set by relativeTimeRange.
+#   B = Reduce (last)  -> collapses A to a single number per series.
+#   C = Threshold      -> the firing condition (this is the rule's "condition").
+# Tune a rule by editing the number in its C > conditions > evaluator > params.
+#
+# ----------------------------------------------------------------------------
+# DATABASE NAME
+# ----------------------------------------------------------------------------
+# Queries use the  default  database (ClickStack's default). If your ClickStack
+# writes to a different database, find/replace  default.  below.
+apiVersion: 1
+
+groups:
+  # ==========================================================================
+  # Services (application health, from otel_traces)
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Services
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 1. Service error rate high --------------------------------------
+      - uid: clickstack-svc-error-rate
+        title: Service error rate high
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: High error rate on {{ $labels.service }}
+          description: >-
+            {{ $labels.service }} server-span error rate is
+            {{ printf "%.1f" $values.B.Value }}% over the last 10m
+            (warns above 5%). Investigate in the Service Health dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT ServiceName AS service,
+                       100.0 * countIf(StatusCode = 'Error') / count() AS value
+                FROM default.otel_traces
+                WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'
+                GROUP BY service
+                HAVING count() >= 20
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+
+      # --- 2. Service p95 latency high -------------------------------------
+      - uid: clickstack-svc-latency-p95
+        title: Service p95 latency high
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: High p95 latency on {{ $labels.service }}
+          description: >-
+            {{ $labels.service }} p95 server latency is
+            {{ printf "%.0f" $values.B.Value }} ms over the last 10m
+            (warns above 2000 ms).
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT ServiceName AS service,
+                       quantile(0.95)(Duration) / 1e6 AS value
+                FROM default.otel_traces
+                WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'
+                GROUP BY service
+                HAVING count() >= 20
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [2000] }
+
+      # --- 3. Trace ingestion stalled --------------------------------------
+      # Fires when no spans have been received for 10 minutes: the collector,
+      # the app, or ClickHouse writes have stopped.
+      - uid: clickstack-trace-ingestion-stalled
+        title: Trace ingestion stalled
+        condition: C
+        for: 10m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+          stack: clickstack
+        annotations:
+          summary: No traces ingested for 10m
+          description: >-
+            Zero spans landed in otel_traces over the last 10m. Check the
+            OpenTelemetry collector and the ClickHouse writer.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT count() AS value
+                FROM default.otel_traces
+                WHERE $__timeFilter(Timestamp)
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+
+  # ==========================================================================
+  # Kubernetes (infrastructure, from otel_metrics_gauge)
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Kubernetes
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 4. Pods not Running ---------------------------------------------
+      # k8s.pod.phase == 2 means Running. Any pod whose latest phase != 2
+      # (Pending/Failed/Unknown) is counted.
+      - uid: clickstack-pods-not-running
+        title: Pods not Running
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: '{{ printf "%.0f" $values.B.Value }} pod(s) not in Running phase'
+          description: >-
+            One or more pods have been outside the Running phase for 5m. Check
+            the Kubernetes Cluster Overview dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT count() AS value
+                FROM (
+                  SELECT ResourceAttributes['k8s.pod.uid'] AS uid,
+                         argMax(Value, TimeUnix) AS phase
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'k8s.pod.phase'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY uid
+                  HAVING phase != 2
+                )
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+  # ==========================================================================
+  # Logs (from otel_logs)
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Logs
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 5. Error log rate high ------------------------------------------
+      - uid: clickstack-error-log-rate
+        title: Error log rate high
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: Elevated error/fatal log rate
+          description: >-
+            error+fatal logs are arriving at
+            {{ printf "%.1f" $values.B.Value }} per second over the last 5m
+            (warns above 5/s). Check the Logs & Errors dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT countIf(lower(SeverityText) IN ('error', 'fatal'))
+                       / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value
+                FROM default.otel_logs
+                WHERE $__timeFilter(Timestamp)
+          - refId: B
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+
+      # --- 6. Fatal logs present -------------------------------------------
+      - uid: clickstack-fatal-logs
+        title: Fatal logs present
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+          stack: clickstack
+        annotations:
+          summary: Fatal logs detected
+          description: >-
+            {{ printf "%.0f" $values.B.Value }} fatal log line(s) in the last 5m.
+            A fatal usually means a process crashed or is crash-looping.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT countIf(lower(SeverityText) = 'fatal') AS value
+                FROM default.otel_logs
+                WHERE $__timeFilter(Timestamp)
+          - refId: B
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }

@@ -1,0 +1,30 @@
+# ClickStack Grafana alerts — notification policy (OPTIONAL)
+# ----------------------------------------------------------------------------
+# Routes ClickStack alerts to the "ClickStack Teams" contact point. Every alert
+# rule in alert-rules.yaml carries the label  stack=clickstack , and the nested
+# route below matches on it.
+#
+# IMPORTANT: Grafana provisioning replaces the ENTIRE root notification policy
+# tree with what is defined here. The root receiver below is set to
+# "grafana-default-email" (Grafana's built-in default) so non-ClickStack alerts
+# keep their default behavior, and only stack=clickstack alerts are routed to
+# Teams.
+#
+# If you already manage your own notification policy and do not want it
+# overwritten, DELETE this file and instead add a single route in the Grafana
+# UI (Alerting > Notification policies > New nested policy) matching
+# stack = clickstack  ->  contact point "ClickStack Teams".
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: grafana-default-email
+    group_by: ['grafana_folder', 'alertname']
+    routes:
+      - receiver: ClickStack Teams
+        object_matchers:
+          - ['stack', '=', 'clickstack']
+        group_by: ['alertname', 'service']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h

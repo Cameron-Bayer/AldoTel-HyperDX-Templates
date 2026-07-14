@@ -1,0 +1,25 @@
+# Dev-harness datasource. Points the local Grafana at the ClickStack ClickHouse
+# via a host port-forward (native protocol, port 9000).
+#
+# NOTE: The shipped dashboards do NOT hard-code this datasource. They use a
+# dashboard "datasource" variable so a customer can pick their own ClickHouse
+# connection on import. This provisioned datasource simply satisfies that
+# variable automatically in our dev environment.
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    uid: clickstack-ch
+    type: grafana-clickhouse-datasource
+    access: proxy
+    isDefault: true
+    jsonData:
+      host: host.docker.internal
+      port: 9000
+      protocol: native
+      username: app
+      defaultDatabase: default
+    secureJsonData:
+      # Injected from the CH_PASSWORD environment variable (see docker-compose.yml).
+      # Defaults to the ClickStack default in dev; set your own for a real cluster.
+      password: ${CH_PASSWORD}

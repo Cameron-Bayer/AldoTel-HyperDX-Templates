@@ -1,0 +1,35 @@
+# Local development harness for building/iterating the ClickStack Grafana dashboards.
+# This is NOT part of the customer deliverable — customers import the JSON in
+# grafana/dashboards/ into their own Grafana. This compose file just gives us a
+# throwaway Grafana wired to the ClickStack ClickHouse for authoring + validation.
+#
+# Usage:
+#   docker compose -f grafana/docker-compose.yml up -d
+#   open http://localhost:3005  (admin / admin)
+#
+# Requires ClickHouse reachable on the host at 9000 (native) — e.g. via:
+#   kubectl port-forward -n clickstack svc/clickstack-clickhouse-clickhouse-headless 9000:9000
+
+services:
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: clickstack-grafana-dev
+    ports:
+      - "3005:3000"
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: dark
+      # ClickHouse password consumed by provisioning/datasources/clickhouse.yaml.
+      # Override via a .env file or shell env; falls back to the ClickStack default.
+      CH_PASSWORD: ${CH_PASSWORD:-hyperdx}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - ./alerting:/etc/grafana/provisioning/alerting
+      - ./dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped

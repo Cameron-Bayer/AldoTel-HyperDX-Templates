@@ -4,6 +4,15 @@ Download-and-go HyperDX dashboards for customers running **Open Source ClickStac
 (HyperDX + ClickHouse + OpenTelemetry). Each domain is a separate dashboard so customers
 enable only what they run.
 
+> 📖 **New here? Start with the [Dashboard Catalog & Field Guide](DASHBOARD-CATALOG.md)** — a
+> plain-language, per-dashboard breakdown of what each one is for, why you'd use it, exactly what
+> telemetry it needs, and how to read it. It also groups the dashboards into **setup tiers** so you
+> know which work with zero setup vs. which need a collector receiver or app instrumentation.
+>
+> 🔍 **Want to go deeper?** The [Dashboard Deep-Dive](DASHBOARD-DEEP-DIVE.md) walks through every
+> dashboard tile-by-tile in a Q&A format — what each visual shows, how to read it, and what to do
+> when it lights up.
+
 | File | What it shows | Source kind |
 |------|---------------|-------------|
 | `dashboards/clickhouse-health.json` | Query/insert rate, failed queries, memory, merges/mutations, replication lag, readonly replicas | metric |
@@ -156,6 +165,27 @@ $env:HDX_EMAIL="you@corp.com"; $env:HDX_PASS="***"; $env:HDX_APP_URL="http://loc
 
 Thresholds are opinionated defaults, tunable per install. See [`alerts/README.md`](alerts/README.md)
 for the full signal table, channel setup, and tuning notes.
+
+## Grafana dashboards
+
+Prefer Grafana, or want a high-level/executive view? [`grafana/`](grafana/README.md) contains four
+importable Grafana dashboards that read the **same ClickHouse data** — no extra collectors or schema
+changes. They use the [ClickHouse data source](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/)
+and a portable **datasource variable**, so on import you just pick your ClickHouse connection:
+
+- **Executive Summary** — one pane combining top signals across services, Kubernetes, and logs.
+- **Service Health (Golden Signals)** — RED metrics per service from `otel_traces`.
+- **Kubernetes Cluster Overview** — nodes, pods, CPU/memory, restarts from `otel_metrics_gauge`.
+- **Logs & Errors Overview** — volume by severity, error rate, and recent errors from `otel_logs`.
+
+The service/Kubernetes/logs boards include **Service / Namespace filter dropdowns**. See
+[`grafana/README.md`](grafana/README.md) for import steps and a local preview harness.
+
+**Grafana alerts:** the [`grafana/alerting/`](grafana/alerting/README.md) folder adds six
+provisioned Grafana unified-alerting rules over the same ClickHouse data (service error
+rate, p95 latency, trace ingestion stalled, pods not Running, error-log rate, fatal logs) —
+Microsoft Teams by default, tunable thresholds. This is the Grafana-native counterpart to
+the HyperDX [Alerts pack](#alerts-pack) above: use HyperDX to investigate, Grafana to page.
 
 ## Support matrix
 

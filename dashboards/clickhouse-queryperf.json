@@ -19,7 +19,7 @@
       }
     },
     {
-      "name": "Failed queries (rate)",
+      "name": "Failed queries",
       "x": 0,
       "y": 3,
       "w": 8,
@@ -119,7 +119,7 @@
       }
     },
     {
-      "name": "Query duration p95 / p99 (ms)",
+      "name": "Query duration — p95 / p99",
       "x": 12,
       "y": 10,
       "w": 12,
@@ -129,11 +129,14 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(query_duration_ms) AS p95_ms,\n       quantile(0.99)(query_duration_ms) AS p99_ms\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+        "numberFormat": {
+          "output": "duration"
+        },
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(query_duration_ms) / 1000 AS p95,\n       quantile(0.99)(query_duration_ms) / 1000 AS p99\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
       }
     },
     {
-      "name": "Peak memory per query p95 (bytes)",
+      "name": "Peak memory per query — p95 / max",
       "x": 0,
       "y": 16,
       "w": 12,
@@ -143,7 +146,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(memory_usage) AS p95_bytes,\n       max(memory_usage) AS max_bytes\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(memory_usage) AS p95,\n       max(memory_usage) AS max\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
       }
     },
     {

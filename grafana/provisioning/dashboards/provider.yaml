@@ -1,0 +1,15 @@
+# Dev-harness dashboard provider. Auto-loads every JSON in grafana/dashboards/
+# so we can iterate on the shippable dashboards live.
+apiVersion: 1
+
+providers:
+  - name: ClickStack
+    orgId: 1
+    folder: ClickStack
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -1,0 +1,828 @@
+{
+  "uid": "clickstack-service-health",
+  "title": "ClickStack · Service Health (Golden Signals)",
+  "description": "RED metrics (Rate, Errors, Duration) for every service, derived from OpenTelemetry traces in ClickHouse (otel_traces).",
+  "tags": [
+    "clickstack",
+    "opentelemetry"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "ClickHouse datasource",
+        "multi": false,
+        "name": "ds",
+        "options": [],
+        "query": "grafana-clickhouse-datasource",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
+        "query": {
+          "refId": "service-var",
+          "rawSql": "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
+          "meta": {
+            "builderOptions": {
+              "database": "default"
+            }
+          }
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": null,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ],
+          "selected": false
+        },
+        "options": [],
+        "hide": 0,
+        "sort": 1,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Requests / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Error rate",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Latency p95",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT quantile(0.95)(Duration) / 1e6 AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Latency p99",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT quantile(0.99)(Duration) / 1e6 AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Request volume by service",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, count() AS requests\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Latency percentiles (ms)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time,\n       quantile(0.50)(Duration) / 1e6 AS p50,\n       quantile(0.95)(Duration) / 1e6 AS p95,\n       quantile(0.99)(Duration) / 1e6 AS p99\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Overall error rate (%)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Errors per interval by service",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, countIf(StatusCode = 'Error') AS errors\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nHAVING errors > 0\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Service breakdown (RED)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${ds}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Req/s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "reqps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p50 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p99 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 5
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    }
+  ]
+}
