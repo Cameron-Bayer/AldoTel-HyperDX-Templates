@@ -186,6 +186,26 @@ Each missing metric is classified: names with a close match are **likely RENAMED
 ABSENT** (that receiver/exporter isn't sending it). Add `-SkipCertificateCheck` if your HyperDX API
 uses a self-signed cert.
 
+### Inventory your environment (tailor the dashboards)
+
+Want the dashboards fitted to exactly what *your* machine emits? `inventory.ps1` dumps a complete
+list of everything flowing — every metric name (with point counts), all log severities and log/resource
+attribute keys, and all trace services, span kinds, status codes, top span names and attribute keys —
+into a single shareable text file.
+
+Unlike `list-metrics`, it needs **no port-forward**: by default it finds the ClickHouse pod and runs
+queries inside it via `kubectl exec` using the in-cluster `default` user (no password).
+
+```powershell
+cd hyperdx
+./inventory.ps1                              # auto-discovers the ClickHouse pod, writes inventory.txt
+./inventory.ps1 -LookbackHours 72            # widen the window for low-traffic environments
+$env:CH_URL = "http://localhost:8123"; ./inventory.ps1   # or use a port-forwarded ClickHouse over HTTP
+```
+
+Then share the generated `inventory.txt` to have the templates tailored to your signals.
+
+
 ## Alerts pack
 
 Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
