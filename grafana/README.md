@@ -191,6 +191,8 @@ authoring/validating the dashboards. **Customers do not need this.**
 kubectl port-forward -n clickstack svc/clickstack-clickhouse-clickhouse-headless 9000:9000
 
 # 2. Start the dev Grafana (http://localhost:3005, admin/admin)
+#    Set CH_PASSWORD first — it feeds the dev ClickHouse datasource (no default is baked in).
+$env:CH_PASSWORD = "<your ClickHouse password>"
 docker compose -f grafana/docker-compose.yml up -d
 
 # 3. Regenerate dashboards after editing the generator

@@ -24,8 +24,10 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_USERS_DEFAULT_THEME: dark
       # ClickHouse password consumed by provisioning/datasources/clickhouse.yaml.
-      # Override via a .env file or shell env; falls back to the ClickStack default.
-      CH_PASSWORD: ${CH_PASSWORD:-hyperdx}
+      # Required — set it in your shell or a .env file before `docker compose up`
+      # (e.g. `export CH_PASSWORD=...` / `$env:CH_PASSWORD='...'`). No default is
+      # baked in so no credential ships in this repo.
+      CH_PASSWORD: ${CH_PASSWORD:?set CH_PASSWORD to your ClickHouse password}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
