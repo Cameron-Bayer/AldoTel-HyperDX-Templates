@@ -44,7 +44,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── validate.js               Validates panel SQL against live ClickHouse
 │   └── docker-compose.yml        Throwaway Grafana for authoring/preview
 │
-├── CHANGELOG.md · ROADMAP.md · VERSION · AGENTS.md
+├── CHANGELOG.md · VERSION
 └── README.md                   ← you are here
 ```
 
@@ -86,4 +86,4 @@ default ClickStack OpenTelemetry collector produces. Land your telemetry in that
 and the templates just work; the only per-install difference (source/connection IDs,
 database name) is resolved at import time.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for release history and [`ROADMAP.md`](ROADMAP.md) for what's next.
+See [`CHANGELOG.md`](CHANGELOG.md) for release history.
