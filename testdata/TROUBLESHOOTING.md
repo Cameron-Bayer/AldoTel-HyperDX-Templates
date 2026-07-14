@@ -51,7 +51,24 @@ The demo isn't successfully exporting to the collector, or the collector isn't i
    ```powershell
    kubectl get pods -n otel-demo
    ```
-   All should be `Running`. `load-generator` and `frontend` are the key traffic sources.
+   All should be `Running`. `load-generator` and `frontend` are the key traffic sources, and
+   the collector pod must be `Running` — if **nothing** is exporting, no traces land.
+
+   **Common cause — the collector is stuck `Pending` with a host-port collision.** The demo
+   chart's *default* collector is a DaemonSet "agent" that binds host ports (4317/4318/6831/
+   14250/14268/9411). On a ClickStack node those host ports are **already held by the ClickStack
+   infra collector daemonset**, so the demo collector can never schedule:
+   ```
+   FailedScheduling ... didn't have free ports for the requested pod ports ... [NodeAffinity]
+   ```
+   The shipped [`otel-demo.values.yaml`](otel-demo.values.yaml) already fixes this by rendering
+   the demo collector as a **Deployment with no host ports**. If you deployed before that fix,
+   apply it with:
+   ```powershell
+   helm upgrade otel-demo open-telemetry/opentelemetry-demo -n otel-demo `
+     --version 0.40.9 -f otel-demo.values.yaml
+   ```
+   then re-check `kubectl get pods -n otel-demo` — the collector should go `Running`.
 
 2. **Is the demo's collector exporting without error?**
    ```powershell

@@ -35,6 +35,22 @@ components:
         memory: 600Mi
 
 opentelemetry-collector:
+  # Render the demo collector as a Deployment with NO host ports. The chart's
+  # default is a DaemonSet "agent" that binds hostPorts 4317/4318/6831/14250/
+  # 14268/9411 — these collide with the ClickStack infra collector daemonset
+  # already holding those host ports on the node, leaving the demo collector
+  # stuck in Pending ("didn't have free ports for the requested pod ports").
+  # Deployment mode + disabling the unused jaeger/zipkin ingest ports removes
+  # all host ports; demo services still reach the collector via its ClusterIP
+  # Service, so ingestion is unaffected.
+  mode: deployment
+  ports:
+    jaeger-compact: { enabled: false }
+    jaeger-grpc:    { enabled: false }
+    jaeger-thrift:  { enabled: false }
+    zipkin:         { enabled: false }
+    otlp:      { hostPort: null }
+    otlp-http: { hostPort: null }
   config:
     exporters:
       otlphttp/clickstack:
