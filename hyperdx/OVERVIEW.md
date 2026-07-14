@@ -6,7 +6,7 @@
 **Status:** Built and validated against live cluster data
 
 > **Companion document:** This is the HyperDX counterpart to
-> [`GRAFANA-OVERVIEW.md`](GRAFANA-OVERVIEW.md). HyperDX is our **investigation**
+> [`GRAFANA-OVERVIEW.md`](../grafana/OVERVIEW.md). HyperDX is our **investigation**
 > layer (deep, interactive, click-through-to-traces); Grafana is our
 > **at-a-glance health + paging** layer. Both read the same ClickHouse data.
 
@@ -425,7 +425,7 @@ Every dashboard also has a **per-tile reference doc** in
 
 - **HyperDX** = deep investigation, click-through to traces/logs, richest for
   engineers debugging an incident.
-- **Grafana** ([`GRAFANA-OVERVIEW.md`](GRAFANA-OVERVIEW.md)) = at-a-glance health
+- **Grafana** ([`GRAFANA-OVERVIEW.md`](../grafana/OVERVIEW.md)) = at-a-glance health
   walls and customer-owned alerting/on-call routing.
 - Both share one data set, so there is a single source of truth and no duplicated
   collection cost.

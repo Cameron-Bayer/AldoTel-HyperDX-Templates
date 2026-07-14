@@ -101,7 +101,7 @@ audience.
 
 ### 4.1 Executive Summary
 
-![Executive Summary dashboard](grafana/screenshots/exec-summary.png)
+![Executive Summary dashboard](screenshots/exec-summary.png)
 
 *Live view: service golden signals, Kubernetes health, log rates, and a "needs attention" table — all on one screen.*
 
@@ -126,7 +126,7 @@ dashboards.
 
 ### 4.2 Service Health — Golden Signals
 
-![Service Health dashboard](grafana/screenshots/service-health.png)
+![Service Health dashboard](screenshots/service-health.png)
 
 *Per-service Rate, Errors, and Duration — with latency percentiles and a full RED breakdown table.*
 
@@ -145,7 +145,7 @@ and pinpoints which service is degrading.
 
 ### 4.3 Kubernetes Cluster Overview
 
-![Kubernetes Cluster Overview dashboard](grafana/screenshots/kubernetes-overview.png)
+![Kubernetes Cluster Overview dashboard](screenshots/kubernetes-overview.png)
 
 *Node and pod health, CPU/memory, deployment availability, and container restarts.*
 
@@ -163,7 +163,7 @@ starved / unstable" — critical for routing an incident to the right team.
 
 ### 4.4 Logs & Errors Overview
 
-![Logs and Errors Overview dashboard](grafana/screenshots/logs-overview.png)
+![Logs and Errors Overview dashboard](screenshots/logs-overview.png)
 
 *Log volume by severity, error rate, top erroring services, and the latest error messages themselves.*
 
@@ -213,7 +213,7 @@ Together these cover the four questions that matter most: *Are requests failing?
 Are they slow? Is the platform (pods) healthy? And is telemetry itself still
 flowing?* — plus a direct crash signal via fatal logs.
 
-![Grafana alert rules, live](grafana/screenshots/alert-rules.png)
+![Grafana alert rules, live](screenshots/alert-rules.png)
 *The six rules live in Grafana, grouped by domain and provisioned as code. This
 capture from the running cluster shows them actively evaluating — 3 firing, 1
 pending, 2 normal — proving the pipeline works end-to-end.*

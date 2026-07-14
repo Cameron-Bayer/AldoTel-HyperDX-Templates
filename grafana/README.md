@@ -5,7 +5,7 @@ ClickStack deployment already stores. They give you executive-style "golden sign
 views over your services, Kubernetes cluster, and logs — no extra collectors or
 schema changes required.
 
-These complement the per-domain HyperDX dashboards in [`../dashboards/`](../dashboards/):
+These complement the per-domain HyperDX dashboards in [`../hyperdx/dashboards/`](../hyperdx/dashboards/):
 HyperDX for deep, interactive investigation; Grafana for at-a-glance health and for
 teams that already standardize on Grafana.
 

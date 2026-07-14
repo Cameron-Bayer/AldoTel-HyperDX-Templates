@@ -6,7 +6,7 @@ Where the HyperDX dashboards are for *investigation*, these alerts are for
 *notification* — Grafana evaluates each rule on a schedule and pushes to your
 on-call channel (Microsoft Teams by default) when something breaks.
 
-This pack mirrors the signal set of the HyperDX alerts pack (`../../alerts`) so
+This pack mirrors the signal set of the HyperDX alerts pack (`../../hyperdx/alerts`) so
 the two stay consistent.
 
 ---

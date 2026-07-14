@@ -4,6 +4,11 @@ Operational guide for an AI agent (or engineer) creating **new HyperDX dashboard
 ClickStack observability platform. Everything here was verified against a live OSS ClickStack
 (HyperDX `2.27.0`) running the OpenTelemetry demo on minikube.
 
+> **Repository layout note.** The HyperDX toolkit now lives under [`hyperdx/`](hyperdx/) and the
+> Grafana deliverable under [`grafana/`](grafana/). Unless stated otherwise, the relative paths in
+> this guide (`dashboards/`, `alerts/`, `import.ps1`, `requirements.json`, `gen-docs.js`, …) are
+> **relative to `hyperdx/`** — `cd hyperdx` before running the importer/pre-flight scripts.
+
 ---
 
 ## 0. Golden rules (read first)
