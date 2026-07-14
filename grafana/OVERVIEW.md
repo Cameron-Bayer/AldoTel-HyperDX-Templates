@@ -31,7 +31,7 @@ Grafana in minutes**.
 - **4 Grafana dashboards** covering services, Kubernetes, logs, and an
   executive summary (40+ visualization panels total).
 - **6 automated alert rules** covering the highest-signal failure modes,
-  delivered to **Microsoft Teams** by default.
+  delivered to your on-call channel via a generic webhook.
 - **Three install paths** so it works on any Grafana — self-hosted, Dockerized,
   Kubernetes, or Grafana Cloud.
 
@@ -54,7 +54,7 @@ flowchart LR
     C -->|writes| CH[(ClickHouse<br/>otel_traces / otel_logs /<br/>otel_metrics_gauge)]
     CH --> HDX[HyperDX<br/>deep investigation]
     CH --> GRAF[Grafana<br/>dashboards + alerts]
-    GRAF -->|fires| TEAMS[Microsoft Teams<br/>on-call channel]
+    GRAF -->|fires| NOTIFY[On-call channel<br/>via webhook]
 ```
 
 **Why this matters to the business:**
@@ -238,15 +238,15 @@ names exactly which service is affected.
 ```mermaid
 flowchart LR
     R[Alert rule breached<br/>for its 'for' duration] --> P{Notification<br/>policy}
-    P -->|label stack=clickstack| T[ClickStack Teams<br/>contact point]
-    T --> CH[Microsoft Teams channel]
+    P -->|label stack=clickstack| T[ClickStack Alerts<br/>contact point]
+    T --> CH[Your on-call channel]
 ```
 
-- **Contact point:** a **Microsoft Teams** channel by default (the customer
-  pastes in a Teams webhook URL). Email, Slack, PagerDuty, etc. are one-line
-  swaps.
+- **Contact point:** a **generic webhook** by default (the customer pastes in a
+  webhook URL — a Slack incoming webhook, a Teams Workflow URL, PagerDuty, etc.).
+  Native email / Slack / PagerDuty integrations are one-line swaps.
 - **Notification policy:** routes only our alerts (tagged `stack=clickstack`) to
-  Teams, leaving any existing alerting the customer already has untouched.
+  that contact point, leaving any existing alerting the customer already has untouched.
 
 ### 5.4 Tuning
 
@@ -311,7 +311,7 @@ requirement — they prompt for the connection on import.
   clearly documented, but worth flagging in onboarding.
 - **Grafana Cloud** cannot use file provisioning for alerts; the Terraform path
   covers this.
-- **Credentials** — the ClickHouse read user and any Teams webhook are treated as
+- **Credentials** — the ClickHouse read user and any webhook URL are treated as
   environment secrets, kept out of version control.
 
 **Possible enhancements (not yet built)**
@@ -335,7 +335,7 @@ requirement — they prompt for the connection on import.
 | **Golden Signals / RED** | Rate, Errors, Duration — the standard way to measure service health. |
 | **p95 / p99 latency** | The response time under which 95% / 99% of requests complete; better than an average for spotting slow outliers. |
 | **Span / trace** | A single unit of work (span) and the end-to-end path of a request (trace). |
-| **Contact point** | Where Grafana sends a notification (Teams, email, etc.). |
+| **Contact point** | Where Grafana sends a notification (a webhook, email, Slack, etc.). |
 | **Provisioning** | Configuring Grafana from files on disk rather than clicking through the UI. |
 
 ---

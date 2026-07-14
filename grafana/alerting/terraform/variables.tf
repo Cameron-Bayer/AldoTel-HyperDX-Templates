@@ -21,10 +21,10 @@ variable "clickhouse_database" {
   description = "ClickHouse database that ClickStack writes to (otel_traces/otel_logs/otel_metrics_gauge live here)."
 }
 
-variable "teams_webhook_url" {
+variable "alert_webhook_url" {
   type        = string
   sensitive   = true
-  description = "Microsoft Teams Workflow webhook URL (Teams channel > Workflows > 'Post to a channel when a webhook request is received')."
+  description = "Webhook URL alerts POST to — your own on-call integration (Slack incoming webhook, a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint)."
 }
 
 # --- Tunable thresholds -----------------------------------------------------

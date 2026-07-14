@@ -49,16 +49,17 @@ restart Grafana:
    ```
    Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (6 rules).
 
-**5. Connect Teams + tune thresholds** —
-   - In `alerting/contact-points.yaml`, replace the placeholder `url` with a **Teams
-     Workflow webhook URL** (Teams channel → *Workflows* → template *"Post to a channel
-     when a webhook request is received"* → copy the URL).
+**5. Connect your notification channel + tune thresholds** —
+   - In `alerting/contact-points.yaml`, replace the placeholder `url` with a
+     webhook URL for the channel you want — a Slack incoming webhook, a Teams
+     Workflow "Post to a channel when a webhook request is received" URL,
+     PagerDuty, Discord, or any HTTP endpoint that accepts a POST.
    - Adjust the `params: [...]` numbers in `alerting/alert-rules.yaml` (see
      [alerting/README.md](alerting/README.md#tuning-thresholds)).
    - Restart Grafana again, or `POST /api/admin/provisioning/alerting/reload`.
 
 **6. Verify** — dashboards show live data; every alert rule reports **health = ok**; and
-*Contact points → ClickStack Teams → Test* delivers a card to your channel.
+*Contact points → ClickStack Alerts → Test* delivers a notification to your channel.
 
 ### Installing alerts without filesystem access (Grafana Cloud)
 
@@ -66,7 +67,7 @@ File-based provisioning needs write access to `/etc/grafana/provisioning/`, whic
 Cloud and some managed setups don't allow. In that case the **dashboards still import
 normally** (step 3); for the **alerts**, use the Terraform provider instead — see
 [`alerting/terraform/`](alerting/terraform/README.md) for a ready-to-apply example that
-creates the same 6 rules, the Teams contact point, and the notification policy via the
+creates the same 6 rules, the alert contact point, and the notification policy via the
 Grafana API.
 
 ---
@@ -90,7 +91,7 @@ unfiltered — it's the always-on overview.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
 ingestion stalled, pods not running, error/fatal logs) lives in
-[`alerting/`](alerting/README.md) — Teams by default, tunable thresholds. Use these when
+[`alerting/`](alerting/README.md) — a generic webhook by default, tunable thresholds. Use these when
 you want Grafana to *page you*, not just visualize.
 
 ---

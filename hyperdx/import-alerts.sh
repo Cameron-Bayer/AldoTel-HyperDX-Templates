@@ -8,10 +8,11 @@
 #
 # Run ./import.sh FIRST so the dashboards exist, then run this.
 #
-# Notification channel: HyperDX has no native "Teams" service, so a Microsoft Teams channel is a
-# `generic` webhook whose URL is a Teams *Incoming Webhook*. Resolution order:
+# Notification channel: alerts need a webhook. HyperDX delivers to a webhook endpoint via a `generic`
+# (or `slack` / `incidentio`) service — point it at your own on-call channel (a Slack incoming webhook,
+# a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Resolution order:
 #   1. --webhook-id <id>                       use verbatim
-#   2. an existing webhook named --webhook-name (default "AldoTel Alerts (Teams)")
+#   2. an existing webhook named --webhook-name (default "AldoTel Alerts")
 #   3. if --webhook-url is given, CREATE one    (needs HDX_EMAIL/HDX_PASS; webhook create is only on
 #                                                the cookie-authed POST /webhooks route)
 #
@@ -21,9 +22,9 @@
 #   ./import-alerts.sh                          # upsert all (webhook must already exist)
 #   ./import-alerts.sh --dry-run
 #   ./import-alerts.sh --only error-rate.json,replication-lag.json
-#   # First-time channel setup (creates the Teams webhook, then imports):
+#   # First-time channel setup (creates the webhook, then imports):
 #   export HDX_EMAIL="you@corp.com"; export HDX_PASS="***"; export HDX_APP_URL="http://localhost:3000"
-#   ./import-alerts.sh --webhook-url "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+#   ./import-alerts.sh --webhook-url "https://your-webhook-endpoint.example/hooks/xxxx"
 #   ./import-alerts.sh --delete                 # remove template-managed alerts (by name)
 #
 # Requires: curl, jq
@@ -31,7 +32,7 @@
 set -euo pipefail
 
 DRY_RUN=0; DELETE=0; ONLY=""
-WEBHOOK_ID=""; WEBHOOK_NAME="AldoTel Alerts (Teams)"; WEBHOOK_URL=""; WEBHOOK_SERVICE="generic"
+WEBHOOK_ID=""; WEBHOOK_NAME="AldoTel Alerts"; WEBHOOK_URL=""; WEBHOOK_SERVICE="generic"
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run)          DRY_RUN=1 ;;
@@ -75,9 +76,9 @@ resolve_webhook_id() {
   if [ -z "$WEBHOOK_URL" ]; then
     cat >&2 <<EOF
 No webhook named '$WEBHOOK_NAME' exists. Either:
-  - create one in HyperDX (Team Settings -> Webhooks -> service 'generic', paste your Microsoft Teams
-    Incoming Webhook URL) named '$WEBHOOK_NAME', then re-run; or
-  - pass --webhook-url "<your Teams Incoming Webhook URL>" to have this script create it
+  - create one in HyperDX (Team Settings -> Webhooks -> service 'generic', paste your on-call
+    channel's webhook URL) named '$WEBHOOK_NAME', then re-run; or
+  - pass --webhook-url "<your webhook URL>" to have this script create it
     (that path also needs HDX_EMAIL / HDX_PASS, and HDX_APP_URL if the UI origin differs from the API).
 EOF
     exit 1

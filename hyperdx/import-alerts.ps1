@@ -10,10 +10,11 @@
 
   Run import.ps1 FIRST so the dashboards exist, then run this.
 
-  Notification channel: alerts need a webhook. HyperDX has no native "Teams" service, so a Microsoft
-  Teams channel is a `generic` webhook whose URL is a Teams *Incoming Webhook*. Resolution order:
+  Notification channel: alerts need a webhook. HyperDX delivers to a webhook endpoint via a `generic`
+  (or `slack` / `incidentio`) service — point it at your own on-call channel (a Slack incoming webhook,
+  a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Resolution order:
     1. -WebhookId <id>                              (use this webhook verbatim)
-    2. an existing webhook named -WebhookName        (default "AldoTel Alerts (Teams)")
+    2. an existing webhook named -WebhookName        (default "AldoTel Alerts")
     3. if -WebhookUrl is given, CREATE one           (needs HDX_EMAIL/HDX_PASS; see note below)
   Webhook CREATE is only exposed on the cookie-authed root route (POST /webhooks), so creating a
   webhook requires an interactive login (HDX_EMAIL/HDX_PASS), and HDX_APP_URL if the HyperDX UI is on
@@ -23,19 +24,19 @@
 .PARAMETER Delete     Delete the template-managed alerts (matched by name) instead of importing.
 .PARAMETER Only       Comma-separated alert file names (e.g. "error-rate.json,replication-lag.json").
 .PARAMETER WebhookId    Use this webhook id verbatim (skips lookup/creation).
-.PARAMETER WebhookName  Name of the webhook to look up / create. Default "AldoTel Alerts (Teams)".
+.PARAMETER WebhookName  Name of the webhook to look up / create. Default "AldoTel Alerts".
 .PARAMETER WebhookUrl   If set and no webhook is found, create a `generic` webhook with this URL
-                        (your Teams Incoming Webhook URL). Requires HDX_EMAIL / HDX_PASS.
-.PARAMETER WebhookService  Webhook service when creating: generic (Teams/other), slack, incidentio.
+                        (your on-call channel's webhook URL). Requires HDX_EMAIL / HDX_PASS.
+.PARAMETER WebhookService  Webhook service when creating: generic (default), slack, incidentio.
 
 .EXAMPLE
   $env:HDX_API_URL = "http://localhost:8000"; $env:HDX_API_KEY = "<key>"
   ./import-alerts.ps1                                  # upsert all (webhook must already exist)
   ./import-alerts.ps1 -DryRun                          # preview
   ./import-alerts.ps1 -Only error-rate.json
-  # First-time channel setup (creates the Teams webhook, then imports):
+  # First-time channel setup (creates the webhook, then imports):
   $env:HDX_EMAIL="you@corp.com"; $env:HDX_PASS="***"; $env:HDX_APP_URL="http://localhost:3000"
-  ./import-alerts.ps1 -WebhookUrl "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+  ./import-alerts.ps1 -WebhookUrl "https://your-webhook-endpoint.example/hooks/xxxx"
   ./import-alerts.ps1 -Delete                          # remove template-managed alerts
 #>
 param(
@@ -43,7 +44,7 @@ param(
   [switch]$Delete,
   [string]$Only,
   [string]$WebhookId,
-  [string]$WebhookName = "AldoTel Alerts (Teams)",
+  [string]$WebhookName = "AldoTel Alerts",
   [string]$WebhookUrl,
   [ValidateSet("generic", "slack", "incidentio")]
   [string]$WebhookService = "generic"
@@ -75,9 +76,9 @@ function Resolve-WebhookId {
   if (-not $WebhookUrl) {
     throw @"
 No webhook named '$WebhookName' exists. Either:
-  - create one in HyperDX (Team Settings -> Webhooks -> service 'generic', paste your Microsoft Teams
-    Incoming Webhook URL) named '$WebhookName', then re-run; or
-  - pass -WebhookUrl "<your Teams Incoming Webhook URL>" to have this script create it
+  - create one in HyperDX (Team Settings -> Webhooks -> service 'generic', paste your on-call
+    channel's webhook URL) named '$WebhookName', then re-run; or
+  - pass -WebhookUrl "<your webhook URL>" to have this script create it
     (that path also needs HDX_EMAIL / HDX_PASS, and HDX_APP_URL if the UI origin differs from the API).
 "@
   }

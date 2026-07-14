@@ -4,7 +4,8 @@ Grafana **unified alerting** rules that watch the same ClickHouse data your
 ClickStack dashboards read (`otel_traces`, `otel_logs`, `otel_metrics_gauge`).
 Where the HyperDX dashboards are for *investigation*, these alerts are for
 *notification* — Grafana evaluates each rule on a schedule and pushes to your
-on-call channel (Microsoft Teams by default) when something breaks.
+on-call channel (any webhook — Slack, a Teams Workflow, PagerDuty, etc.) when
+something breaks.
 
 This pack mirrors the signal set of the HyperDX alerts pack (`../../hyperdx/alerts`) so
 the two stay consistent.
@@ -16,8 +17,8 @@ the two stay consistent.
 | File | Purpose |
 |------|---------|
 | `alert-rules.yaml` | The 6 alert rules (queries + thresholds). |
-| `contact-points.yaml` | The **Teams** contact point (add your webhook URL). |
-| `notification-policy.yaml` | Routes ClickStack alerts to Teams (optional). |
+| `contact-points.yaml` | The alert contact point — a generic webhook (add your URL). |
+| `notification-policy.yaml` | Routes ClickStack alerts to that contact point (optional). |
 
 ### The 6 alerts
 
@@ -54,11 +55,13 @@ If your ClickStack writes to a database other than `default`, also find/replace
 
 ### 2. Set your notification channel
 
-Open `contact-points.yaml` and replace the placeholder `url` with a **Teams
-Incoming Webhook** URL (Teams → channel → *Connectors* → *Incoming Webhook*).
-Prefer email/Slack/PagerDuty? Comment out the `teams` receiver and use one of
-the examples in that file (or add any Grafana contact-point type), then update
-`notification-policy.yaml` to reference the receiver name you kept.
+Open `contact-points.yaml` and replace the placeholder `url` with a webhook URL
+for the channel you want — a Slack incoming webhook, a Teams Workflow "Post to a
+channel when a webhook request is received" URL, PagerDuty, Discord, or any HTTP
+endpoint that accepts a POST. Prefer a native email/Slack/PagerDuty integration?
+Comment out the `webhook` receiver and use one of the examples in that file (or
+add any Grafana contact-point type), then update `notification-policy.yaml` to
+reference the receiver name you kept.
 
 ### 3. Drop the files into Grafana's provisioning path
 
@@ -72,7 +75,7 @@ volumes:
 ```
 
 On restart you'll see **Alerting → Alert rules → "ClickStack Alerts"** folder
-with the 6 rules, and the **ClickStack Teams** contact point under
+with the 6 rules, and the **ClickStack Alerts** contact point under
 *Contact points*.
 
 > **No filesystem access (Grafana Cloud)?** File provisioning needs write access
@@ -84,10 +87,10 @@ with the 6 rules, and the **ClickStack Teams** contact point under
 > **Heads-up on `notification-policy.yaml`:** Grafana provisioning replaces the
 > **entire** root notification policy tree. This file keeps the root receiver as
 > Grafana's built-in default email and adds a nested route sending
-> `stack=clickstack` alerts to Teams. If you already manage your own policy and
-> don't want it overwritten, **delete this file** and instead add one nested
-> route by hand: *Alerting → Notification policies → New nested policy*, match
-> `stack = clickstack`, contact point **ClickStack Teams**.
+> `stack=clickstack` alerts to the ClickStack contact point. If you already
+> manage your own policy and don't want it overwritten, **delete this file** and
+> instead add one nested route by hand: *Alerting → Notification policies → New
+> nested policy*, match `stack = clickstack`, contact point **ClickStack Alerts**.
 
 ---
 

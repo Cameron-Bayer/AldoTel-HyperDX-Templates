@@ -151,16 +151,16 @@ It prints a `--only` command listing exactly the dashboards that are safe to imp
 
 Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
 high-level signal (services error rate, SLO fast burn, collector drops, ClickHouse too-many-parts,
-replication lag). Each binds to a dashboard tile and notifies a channel (Microsoft Teams by default)
-when a threshold is breached. Portable and idempotent like the dashboards.
+replication lag). Each binds to a dashboard tile and notifies a channel (a generic webhook you point
+at your on-call system) when a threshold is breached. Portable and idempotent like the dashboards.
 
 ```powershell
 # import dashboards first, then:
 ./import-alerts.ps1 -DryRun                     # preview
-./import-alerts.ps1                             # upsert (reuses a webhook named "AldoTel Alerts (Teams)")
-# first-time channel setup (creates the Teams webhook):
+./import-alerts.ps1                             # upsert (reuses a webhook named "AldoTel Alerts")
+# first-time channel setup (creates the webhook):
 $env:HDX_EMAIL="you@corp.com"; $env:HDX_PASS="***"; $env:HDX_APP_URL="http://localhost:3000"
-./import-alerts.ps1 -WebhookUrl "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+./import-alerts.ps1 -WebhookUrl "https://your-webhook-endpoint.example/hooks/xxxx"
 ```
 
 Thresholds are opinionated defaults, tunable per install. See [`alerts/README.md`](alerts/README.md)
@@ -184,7 +184,7 @@ The service/Kubernetes/logs boards include **Service / Namespace filter dropdown
 **Grafana alerts:** the [`../grafana/alerting/`](../grafana/alerting/README.md) folder adds six
 provisioned Grafana unified-alerting rules over the same ClickHouse data (service error
 rate, p95 latency, trace ingestion stalled, pods not Running, error-log rate, fatal logs) —
-Microsoft Teams by default, tunable thresholds. This is the Grafana-native counterpart to
+a generic webhook by default, tunable thresholds. This is the Grafana-native counterpart to
 the HyperDX [Alerts pack](#alerts-pack) above: use HyperDX to investigate, Grafana to page.
 
 ## Support matrix

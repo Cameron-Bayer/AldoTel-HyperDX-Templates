@@ -22,20 +22,19 @@ per‑install dashboard/tile/webhook IDs at import time.
 All five bind to `line` / `number` tiles (the tile types HyperDX can alert on). Values that HyperDX
 formats as a fraction (error rate, SLI) use fractional thresholds (`0.02` = 2%).
 
-## Notification channel (Microsoft Teams by default)
+## Notification channel (generic webhook — wire your own)
 
-HyperDX has no dedicated Teams service — a Teams channel is a **`generic` webhook** whose URL is a
-**Teams Incoming Webhook**. You choose the channel; Teams is just the default assumption.
+HyperDX delivers alerts to a **webhook**. The importer is channel-agnostic: point it at whatever
+on-call endpoint you use — a Slack incoming webhook, a Teams Workflow "Post to a channel when a
+webhook request is received" URL, PagerDuty, Discord, or any HTTP endpoint that accepts a POST.
 
 **Recommended (UI, any channel):** in HyperDX go to **Team Settings → Webhooks**, add a webhook,
-choose the service (`generic` for Teams, or `slack` / `incidentio`), paste the channel URL, and name it
-**`AldoTel Alerts (Teams)`** (or pass your own name with `-WebhookName` / `--webhook-name`). Then run
-the importer — it looks the webhook up by name.
+choose the service (`generic` for most endpoints, or `slack` / `incidentio`), paste your channel URL,
+and name it **`AldoTel Alerts`** (or pass your own name with `-WebhookName` / `--webhook-name`). Then
+run the importer — it looks the webhook up by name.
 
-**Or let the importer create it** (Teams/generic) — see the setup example below.
-
-To get a Teams Incoming Webhook URL: Teams channel → **⋯ → Connectors → Incoming Webhook → Configure**,
-name it, **Create**, copy the URL.
+**Or let the importer create it** — pass `-WebhookUrl` / `--webhook-url` with your endpoint (see the
+setup example below).
 
 ## Import
 
@@ -45,15 +44,15 @@ Prereq: import the dashboards first (`./import.ps1` / `./import.sh`) so the tile
 # PowerShell
 $env:HDX_API_URL = "http://localhost:8000"; $env:HDX_API_KEY = "<Personal API Access Key>"
 
-# A) webhook already created in the UI (named "AldoTel Alerts (Teams)"):
+# A) webhook already created in the UI (named "AldoTel Alerts"):
 ./import-alerts.ps1
 ./import-alerts.ps1 -DryRun                      # preview, write nothing
 ./import-alerts.ps1 -Only error-rate.json
 
-# B) first-time channel setup — create the Teams webhook, then import:
+# B) first-time channel setup — create the webhook, then import:
 $env:HDX_EMAIL = "you@corp.com"; $env:HDX_PASS = "***"
 $env:HDX_APP_URL = "http://localhost:3000"       # only if the UI origin differs from the API
-./import-alerts.ps1 -WebhookUrl "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+./import-alerts.ps1 -WebhookUrl "https://your-webhook-endpoint.example/hooks/xxxx"
 
 ./import-alerts.ps1 -Delete                       # remove the template-managed alerts
 ```
@@ -66,7 +65,7 @@ export HDX_API_URL="http://localhost:8000"; export HDX_API_KEY="<Personal API Ac
 ./import-alerts.sh --only error-rate.json,replication-lag.json
 # first-time channel setup:
 export HDX_EMAIL="you@corp.com"; export HDX_PASS="***"; export HDX_APP_URL="http://localhost:3000"
-./import-alerts.sh --webhook-url "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+./import-alerts.sh --webhook-url "https://your-webhook-endpoint.example/hooks/xxxx"
 ./import-alerts.sh --delete
 ```
 

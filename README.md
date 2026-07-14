@@ -7,7 +7,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 | Deliverable | Use it for | Start here |
 |-------------|-----------|------------|
 | 🔎 **[HyperDX](hyperdx/)** | Deep, interactive **investigation** — per-domain dashboards, drill-downs, log/trace search, data-science tiles | [`hyperdx/README.md`](hyperdx/README.md) |
-| 📊 **[Grafana](grafana/)** | At-a-glance **health**, executive views, and **alerting** (Microsoft Teams) | [`grafana/README.md`](grafana/README.md) |
+| 📊 **[Grafana](grafana/)** | At-a-glance **health**, executive views, and **alerting** (generic webhook) | [`grafana/README.md`](grafana/README.md) |
 
 > **Which do I use?** Use **HyperDX to investigate** (rich, click-through, log/trace correlation)
 > and **Grafana to watch & page** (high-level golden-signal boards + provisioned alert rules).
@@ -70,10 +70,10 @@ cd AldoTel-HyperDX-Templates/hyperdx
 ## 📊 Grafana section
 
 Four high-level Grafana dashboards over the same ClickHouse data, plus a **provisioned
-alerting pack** (YAML **and** Terraform) that notifies Microsoft Teams.
+alerting pack** (YAML **and** Terraform) that notifies your on-call channel via a webhook.
 
 - **Get started:** [`grafana/README.md`](grafana/README.md) — customer quick-start, import steps, and a local preview harness.
-- **Alerts:** [`grafana/alerting/README.md`](grafana/alerting/README.md) — six unified-alerting rules, Teams setup, and tunable thresholds.
+- **Alerts:** [`grafana/alerting/README.md`](grafana/alerting/README.md) — six unified-alerting rules, channel setup, and tunable thresholds.
 - **Present it:** [`grafana/OVERVIEW.md`](grafana/OVERVIEW.md) — manager-facing summary with screenshots and diagrams.
 
 ---

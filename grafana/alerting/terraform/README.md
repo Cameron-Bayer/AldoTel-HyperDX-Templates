@@ -8,8 +8,8 @@ Grafana HTTP API using the official
 
 - a **folder** `ClickStack Alerts`,
 - the **6 alert rules** (3 groups: Services, Kubernetes, Logs),
-- the **ClickStack Teams** contact point,
-- a **notification policy** routing `stack=clickstack` alerts to Teams.
+- the **ClickStack Alerts** contact point,
+- a **notification policy** routing `stack=clickstack` alerts to that contact point.
 
 > Prefer file provisioning if you can — it needs no tokens and no Terraform.
 > This path exists purely for environments where filesystem provisioning isn't
@@ -24,8 +24,9 @@ Grafana HTTP API using the official
 3. A **Grafana service account token** with Editor/Admin rights
    (*Administration → Service accounts → Add token*). On Grafana Cloud you can
    also use a Cloud Access Policy token.
-4. A **Teams Workflow webhook URL** (*Teams channel → Workflows → "Post to a
-   channel when a webhook request is received" → copy URL*).
+4. A **webhook URL** for your on-call channel (a Slack incoming webhook, a Teams
+   Workflow "Post to a channel when a webhook request is received" URL, PagerDuty,
+   Discord, or any HTTP endpoint that accepts a POST).
 
 ## Usage
 
@@ -38,7 +39,7 @@ terraform apply
 ```
 
 After apply, open **Alerting → Alert rules** in Grafana — the *ClickStack Alerts*
-folder holds all 6 rules. Test delivery via **Contact points → ClickStack Teams
+folder holds all 6 rules. Test delivery via **Contact points → ClickStack Alerts
 → Test**.
 
 ## Setting thresholds
@@ -60,9 +61,9 @@ live inline in `main.tf` if you ever need to change them.
 
 ## Changing the notification channel
 
-`main.tf` uses a `teams` contact point. To use email/Slack/PagerDuty instead,
-swap the `teams { ... }` block in `grafana_contact_point.clickstack_teams` for
-the matching block from the
+`main.tf` uses a generic `webhook` contact point. To use a native email / Slack /
+PagerDuty / Teams integration instead, swap the `webhook { ... }` block in
+`grafana_contact_point.clickstack_alerts` for the matching block from the
 [provider docs](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/contact_point)
 (e.g. `email { addresses = [...] }`), then `terraform apply`.
 

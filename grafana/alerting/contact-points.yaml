@@ -1,30 +1,31 @@
 # ClickStack Grafana alerts — contact points
 # ----------------------------------------------------------------------------
-# Defines WHERE alert notifications are sent. The default channel is Microsoft
-# Teams, matching the HyperDX alerts pack (../../alerts). This file is ADDITIVE:
-# it adds a contact point named "ClickStack Teams" without touching any contact
-# points you already have.
+# Defines WHERE alert notifications are sent. This ships channel-agnostic: the
+# default contact point is a generic webhook you point at your own on-call
+# integration. This file is ADDITIVE: it adds a contact point named
+# "ClickStack Alerts" without touching any contact points you already have.
 #
 # TO USE:
-#   1. In Teams, add an "Incoming Webhook" connector to the target channel and
-#      copy the webhook URL.
+#   1. Get a webhook URL for the channel you want (a Slack incoming webhook, a
+#      Teams Workflow "Post to a channel when a webhook request is received" URL,
+#      PagerDuty, Discord, or any HTTP endpoint that accepts a POST).
 #   2. Replace the url below with that webhook URL.
 #
-# Prefer email / Slack / PagerDuty instead? Comment out the teams receiver and
-# uncomment one of the examples at the bottom (or add your own — any Grafana
-# contact point type works). Then point the notification policy
-# (notification-policy.yaml) at the receiver name you keep.
+# Prefer a native integration (email / Slack / PagerDuty)? Comment out the
+# webhook receiver and uncomment one of the examples at the bottom (or add your
+# own — any Grafana contact point type works). Then point the notification
+# policy (notification-policy.yaml) at the receiver name you keep.
 apiVersion: 1
 
 contactPoints:
   - orgId: 1
-    name: ClickStack Teams
+    name: ClickStack Alerts
     receivers:
-      - uid: clickstack-teams
-        type: teams
+      - uid: clickstack-alerts
+        type: webhook
         disableResolveMessage: false
         settings:
-          url: https://REPLACE-WITH-YOUR-TEAMS-INCOMING-WEBHOOK-URL
+          url: https://REPLACE-WITH-YOUR-WEBHOOK-URL
 
   # --- Alternative examples (optional) ------------------------------------
   # - orgId: 1

@@ -34,7 +34,7 @@ engineers, and ClickHouse operators.
 - **10 HyperDX dashboards** spanning four telemetry domains — your applications,
   your Kubernetes cluster, the OpenTelemetry Collector, and ClickHouse itself.
 - **5 automated alert rules** on the highest-signal conditions, delivered to
-  **Microsoft Teams** by default.
+  your on-call channel via a generic webhook.
 - **Tiered adoption** — each dashboard lights up as you wire up the matching
   pipeline, with a **pre-flight check** that tells a customer exactly which ones
   will show data today.
@@ -64,7 +64,7 @@ flowchart LR
     C -->|writes| CH[("ClickHouse<br/>otel_logs / otel_traces /<br/>otel_metrics")]
     CHm -.->|reads system tables| CH
     CH --> HDX["HyperDX<br/>Search - Dashboards - Alerts"]
-    HDX -->|fires| TEAMS["Microsoft Teams<br/>on-call channel"]
+    HDX -->|fires| NOTIFY["On-call channel<br/>via webhook"]
 ```
 
 **Why this matters to the business:**
@@ -354,12 +354,12 @@ the dashboard is exactly what the alert measures** — no drift between the two.
 flowchart LR
     T[Dashboard tile value] --> E{HyperDX alert<br/>threshold check}
     E -->|breached| W[Webhook<br/>generic]
-    W --> CH[Microsoft Teams channel]
+    W --> CH[Your on-call channel]
 ```
 
-- **Channel:** HyperDX has no dedicated Teams integration, so a Teams channel is
-  configured as a **`generic` webhook** pointing at a Teams Incoming Webhook URL.
-  Slack and incident.io are also supported.
+- **Channel:** HyperDX delivers to a **`generic` webhook** — point it at your own
+  on-call endpoint (a Slack incoming webhook, a Teams Workflow URL, PagerDuty, etc.).
+  Slack and incident.io service types are also supported.
 - **Portable & idempotent:** the importer resolves the per-install
   dashboard/tile/webhook IDs at import time and matches alerts by
   `(dashboard, tile)`, so re-running never creates duplicates.
@@ -385,8 +385,8 @@ The suite is designed for **"import and go."**
 3. **Import the dashboards** — `./import.ps1` / `.sh` (or `-Only <files>` for a
    subset). Portable by design: no hard-coded IDs; the importer resolves
    per-install source/connection IDs.
-4. **Import the alerts** — `./import-alerts.ps1` / `.sh` after adding a Teams (or
-   Slack) webhook in *Team Settings → Webhooks*. Idempotent and re-runnable.
+4. **Import the alerts** — `./import-alerts.ps1` / `.sh` after adding a webhook
+   for your on-call channel in *Team Settings → Webhooks*. Idempotent and re-runnable.
 
 Every dashboard also has a **per-tile reference doc** in
 [`docs/`](docs/) with a live screenshot, and a **customer catalog** in
@@ -418,7 +418,7 @@ Every dashboard also has a **per-tile reference doc** in
   against live OSS ClickStack; the pre-flight check flags any mismatch to adjust.
 - **Replicated-only tiles** (Keeper replication) are intentionally empty on
   single-node ClickHouse — expected, not a fault.
-- **Credentials** — the API key and any Teams webhook are treated as environment
+- **Credentials** — the API key and any webhook URL are treated as environment
   secrets, kept out of version control.
 
 **How HyperDX and Grafana complement each other**
@@ -453,7 +453,7 @@ Every dashboard also has a **per-tile reference doc** in
 | **Span / trace** | A single unit of work (span) and the end-to-end path of a request (trace). |
 | **MergeTree / parts** | ClickHouse's storage engine and its on-disk data fragments; too many parts is a common failure mode. |
 | **Keeper** | ClickHouse's consensus/coordination service that keeps replicas in sync. |
-| **Webhook** | A URL HyperDX posts to when an alert fires (a Teams channel, in our default). |
+| **Webhook** | A URL HyperDX posts to when an alert fires (your on-call channel's endpoint). |
 
 ---
 

@@ -1,6 +1,6 @@
 # ClickStack Grafana alerts — Terraform
 # ============================================================================
-# Creates the same 6 alert rules, the Teams contact point, and the notification
+# Creates the same 6 alert rules, the alert contact point, and the notification
 # policy as the provisioning YAML in the parent folder — but through the Grafana
 # HTTP API. Use this when you CANNOT drop files into /etc/grafana/provisioning
 # (e.g. Grafana Cloud, or a locked-down managed Grafana).
@@ -35,30 +35,31 @@ resource "grafana_folder" "clickstack_alerts" {
 }
 
 # ----------------------------------------------------------------------------
-# Contact point: Microsoft Teams (paste your Teams Workflow webhook URL)
+# Contact point: generic webhook. Paste your own on-call webhook URL — a Slack
+# incoming webhook, a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint.
 # ----------------------------------------------------------------------------
-resource "grafana_contact_point" "clickstack_teams" {
-  name = "ClickStack Teams"
+resource "grafana_contact_point" "clickstack_alerts" {
+  name = "ClickStack Alerts"
 
-  teams {
-    url                     = var.teams_webhook_url
+  webhook {
+    url                     = var.alert_webhook_url
     disable_resolve_message = false
   }
 }
 
 # ----------------------------------------------------------------------------
-# Notification policy: route stack=clickstack alerts to Teams.
+# Notification policy: route stack=clickstack alerts to the ClickStack contact point.
 # NOTE: grafana_notification_policy manages the org's ROOT policy. The root
 # contact point stays "grafana-default-email"; a nested route sends ClickStack
-# alerts to Teams. If you already manage your policy in Terraform elsewhere,
-# fold the nested `policy` block into that resource instead of using this one.
+# alerts to your contact point. If you already manage your policy in Terraform
+# elsewhere, fold the nested `policy` block into that resource instead of using this one.
 # ----------------------------------------------------------------------------
 resource "grafana_notification_policy" "root" {
   group_by      = ["grafana_folder", "alertname"]
   contact_point = "grafana-default-email"
 
   policy {
-    contact_point = grafana_contact_point.clickstack_teams.name
+    contact_point = grafana_contact_point.clickstack_alerts.name
     group_by      = ["alertname", "service"]
 
     matcher {
