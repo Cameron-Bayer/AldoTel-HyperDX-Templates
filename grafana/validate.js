@@ -7,6 +7,7 @@ async function run(sql, queryType, format) {
   // Template variables aren't interpolated when we POST raw SQL directly, so
   // substitute the filter placeholders with equivalent subqueries for validation.
   sql = sql
+    .replace(/\$\{database\}/g, 'default')
     .replace(/\$\{service:sqlstring\}/g, "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE Timestamp > now() - INTERVAL 3 HOUR")
     .replace(/\$\{namespace:sqlstring\}/g, "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase'");
   const body = {
