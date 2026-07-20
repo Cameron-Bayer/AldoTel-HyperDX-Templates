@@ -4,7 +4,7 @@
     {
       "file": "clickhouse-health.json",
       "tmpl": "tmpl:clickhouse-health",
-      "name": "ClickHouse — Cluster Health",
+      "name": "ClickHouse — Operations",
       "receivers": [
         "ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)"
       ],
@@ -236,7 +236,7 @@
           "kind": "log",
           "required": false,
           "label": "error logs",
-          "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL"
+          "where": "SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal"
         }
       ]
     },
@@ -336,28 +336,6 @@
           "required": false,
           "metricType": "sum",
           "metricName": "ClickHouseProfileEvents_FailedQuery"
-        }
-      ]
-    },
-    {
-      "file": "slo-errorbudget.json",
-      "tmpl": "tmpl:slo-errorbudget",
-      "name": "Services — SLO / Error Budget",
-      "receivers": [
-        "Application traces (OTLP) with server spans and StatusCode"
-      ],
-      "checks": [
-        {
-          "kind": "trace",
-          "required": true,
-          "label": "server spans",
-          "where": "SpanKind:Server"
-        },
-        {
-          "kind": "trace",
-          "required": false,
-          "label": "error spans",
-          "where": "SpanKind:Server AND StatusCode:Error"
         }
       ]
     },

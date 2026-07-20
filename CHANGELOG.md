@@ -20,7 +20,7 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   replication lag (> 60s). `import-alerts.ps1` / `import-alerts.sh` upsert idempotently and notify a
   generic **webhook** you point at your own on-call channel. Thresholds are tunable per install.
   See `alerts/README.md`.
-- **Screenshots of all 10 dashboards** in the README (`docs/images/*.png`), captured against a live
+- **Screenshots of all dashboards** in the README (`docs/images/*.png`), captured against a live
   open-source ClickStack (HyperDX 2.27) with the OpenTelemetry demo flowing — a visual preview of
   what customers get after `import`.
 - **Preview image embedded at the top of every per-dashboard reference** (`docs/<slug>.md`), wired
@@ -34,6 +34,19 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ### Changed
 
+- **Dashboards consolidated 10 → 9 and split into default + advanced.** The six everyday
+  dashboards stay in [`hyperdx/dashboards/`](hyperdx/dashboards/); three ClickHouse deep-dives
+  (`clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication`) moved
+  to `hyperdx/dashboards/advanced/`. The import scripts and `gen-docs.js` recurse into `advanced/`,
+  so `./import.ps1` still installs all nine.
+- **`slo-errorbudget` folded into `services-red`.** The standalone SLO dashboard was removed; its
+  Availability (SLI), error-budget-remaining, and multi-window burn-rate (1h/6h/24h/3d) now live as
+  a compact **SLO strip** at the bottom of Services — RED.
+- **`clickhouse-health` renamed to "ClickHouse — Operations".** Dropped the single-node-only
+  replication-lag / readonly-replica tiles (that concept now lives in the advanced *Keeper &
+  Replication* dashboard) and added operational KPIs — disk free %, active merges, pending
+  mutations, running queries, and memory tracking (from `system.disks` / `system.merges` /
+  `system.mutations`).
 - **Alerting is now channel-agnostic — Microsoft Teams removed as the default.** Both packs ship a
   **generic webhook** placeholder you point at your own on-call channel (Slack incoming webhook, a
   Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Grafana's contact point is a
@@ -55,19 +68,32 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   against a trailing baseline and ±3σ control band computed over a causal ~24h window (ending 1h
   before each point), so an in-progress spike can't poison its own baseline. Honors the `Service`
   filter; degrades gracefully until enough history exists.
-- **Roomier, taller tiles** across all 10 dashboards for readability, with positions reflowed so
+- **Roomier, taller tiles** across all dashboards for readability, with positions reflowed so
   nothing overlaps.
 - **Consistent number formatting** — ratio "rates" render as true percentages with 3 decimal
   places; throughput counts (req/s, query/s, rows/s) left as counts.
 
 ### Fixed
 
+- **Cumulative OTel counters now shown as per-instance deltas/rates.** Collector and ClickHouse
+  counter tiles previously summed raw cumulative values across restarts and instances; they now
+  compute per-`service.instance.id` deltas over the selected window and honor the time picker.
+- **Trace tiles scoped to server spans.** The `executive-overview` and `services-red`
+  request-rate / error-rate / latency tiles now filter `SpanKind = 'Server'`, so they reflect real
+  request handling instead of every span kind (client, internal, producer/consumer).
+- **Kubernetes "Pods by phase" now counts pods** (it previously read a metric value), and a new
+  *Saturation & restarts* section adds pods-not-Running, new container restarts, node memory
+  saturation, and a top-pods-by-restarts table.
+- **Logs error filter corrected** to `SeverityNumber >= 17` (severity text is stored lowercase),
+  with new normalized error-signature and error-source-by-namespace/pod tables.
+- **Collector health gained** refused-logs / refused-metric-points, exporter **queue-utilization %**,
+  and send-failure tiles.
 - **Latency/duration tiles read ~1000× too high.** Several tiles fed raw nanosecond/millisecond
   values into a duration format whose base unit is seconds (p95 showed `44.08s` for an actual
   ~44 ms; merge durations showed hours). All affected tiles in `executive-overview`, `services-red`,
   and `clickhouse-storage-mergetree` now convert to seconds and format correctly.
 - **Dashboard filters no longer blank unrelated tiles.** HyperDX applies dashboard filters
-  globally, so a filter on a column some tiles lack silently emptied them. Audited all 10
+  globally, so a filter on a column some tiles lack silently emptied them. Audited all
   dashboards: removed the non-working ClickHouse `Instance`/`Node` filters, kept infrastructure
   tiles as constant context on the Executive Overview, made the Services RED / SLO analytics tiles
   honor the `Service` filter, and fixed the Logs "new patterns" tile (severity is stored lowercase).

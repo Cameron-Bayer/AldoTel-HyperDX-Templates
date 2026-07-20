@@ -8,28 +8,31 @@ A visual-by-visual reference for every dashboard in this pack. For each chart yo
 >
 > New to the pack? Read the **[Core Concepts](#core-concepts)** section first — it explains the handful of ideas that every dashboard builds on.
 
+Imported dashboard display names are prefixed **`ClickStack ·`**; this guide uses the shorter names below.
+The three ClickHouse deep dives live under `hyperdx/dashboards/advanced/` and are optional, but the
+importer recurses into that subfolder when you import the full pack.
+
 ---
 
 ## Contents
 
 - [Core Concepts](#core-concepts)
 - [1. Services — RED](#1-services--red)
-- [2. Services — SLO / Error Budget](#2-services--slo--error-budget)
-- [3. Logs — Overview](#3-logs--overview)
-- [4. Kubernetes — Infrastructure](#4-kubernetes--infrastructure)
-- [5. OpenTelemetry Collector — Pipeline Health](#5-opentelemetry-collector--pipeline-health)
-- [6. ClickHouse — Cluster Health](#6-clickhouse--cluster-health)
-- [7. ClickHouse — Query Performance & Errors](#7-clickhouse--query-performance--errors)
-- [8. ClickHouse — Storage & MergeTree](#8-clickhouse--storage--mergetree)
-- [9. ClickHouse — Keeper & Replication](#9-clickhouse--keeper--replication)
-- [10. Executive Overview](#10-executive-overview)
+- [2. Logs — Overview](#2-logs--overview)
+- [3. Kubernetes — Infrastructure](#3-kubernetes--infrastructure)
+- [4. OpenTelemetry Collector — Pipeline Health](#4-opentelemetry-collector--pipeline-health)
+- [5. ClickHouse — Operations](#5-clickhouse--operations)
+- [6. ClickHouse — Query Performance & Errors](#6-clickhouse--query-performance--errors)
+- [7. ClickHouse — Storage & MergeTree](#7-clickhouse--storage--mergetree)
+- [8. ClickHouse — Keeper & Replication](#8-clickhouse--keeper--replication)
+- [9. Executive Overview](#9-executive-overview)
 - [Quick-Reference Playbook](#quick-reference-playbook)
 
 ---
 
 ## Core Concepts
 
-A few ideas underpin every dashboard. Understanding them once makes all ten easy to read.
+A few ideas underpin every dashboard. Understanding them once makes all nine easy to read.
 
 ### The three data sources
 
@@ -55,7 +58,7 @@ Both styles respect the dashboard filters described below.
 - **Span durations are recorded in nanoseconds.** Latency charts convert this to seconds or milliseconds for display.
 - **Server spans** represent the point at which a service received a request. Rate, error, and latency charts count only these, so a single request is not counted multiple times as it passes through the system.
 - **Percentiles (p50 / p95 / p99)** describe the distribution of a value. A p95 latency of 500 ms means 95% of requests completed within 500 ms. Monitoring p95 and p99 reveals the slow "tail" of requests that a simple average would hide.
-- **Metric types.** A *gauge* is a point-in-time reading (for example, queries running right now). A *sum* is a continuously increasing counter (for example, total queries ever run); its value is meaningful as a rate or as a change over a chosen window.
+- **Metric types.** A *gauge* is a point-in-time reading (for example, queries running right now). A *sum* is a continuously increasing counter (for example, total queries ever run); these dashboards show cumulative OTel counters as per-instance rates or deltas over the selected time picker, not raw cumulative totals.
 - **Dashboard filters.** The dropdown selectors at the top of a dashboard (such as *Service*, *Namespace*, or *Severity*) apply to every chart on that dashboard at once.
 
 ---
@@ -63,12 +66,12 @@ Both styles respect the dashboard filters described below.
 ## 1. Services — RED
 
 **Data source:** Traces  ·  **Filters:** Service
-**Purpose:** The primary starting point for application performance. RED stands for **Rate**, **Errors**, and **Duration** — the three signals that best summarise the health of any service.
+**Purpose:** The primary starting point for application performance and reliability. RED stands for **Rate**, **Errors**, and **Duration** — the three signals that best summarise the health of any service — and the bottom SLO strip shows whether those errors are burning budget.
 
 ### Rate & errors
 
-**Request rate by service** — request volume per service over time.
-- **Q: What does this show?** The number of requests each service handles in each time interval.
+**Request rate by service** — server request volume per service over time.
+- **Q: What does this show?** The number of server spans each service handles in each time interval, so a request is counted where it is actually handled.
 - **Q: How should I read it?** This is the overall shape of your traffic. A line falling to zero indicates a service has stopped receiving requests. A sudden spike may indicate a surge in demand or a retry loop upstream.
 
 **Error rate %** — the proportion of server requests that failed.
@@ -95,53 +98,33 @@ Both styles respect the dashboard filters described below.
 **Server latency distribution (heatmap)** — the full distribution of response times over time.
 - **Q: What does this add?** It reveals the shape of latency. A single band indicates consistent performance. Two distinct bands indicate two populations of requests (for example, cached versus uncached responses) that an average would obscure.
 
----
+### SLO strip
 
-## 2. Services — SLO / Error Budget
+**Availability (SLI)** — the measured proportion of successful server requests, color-coded against the 99.9% objective.
+- **Q: What is an SLI?** A Service Level Indicator is the measured "good request" ratio. Dips below the objective consume error budget.
 
-**Data source:** Traces  ·  **Filters:** Service
-**Purpose:** Expresses reliability in business terms: whether you are meeting your service level objective (SLO) and how quickly you are consuming your error budget. The dashboard is configured for a **99.9%** objective, which allows a **0.1%** error budget.
+**Error budget remaining** — how much of the 0.1% monthly budget is still available.
+- **Q: Why show this next to RED?** It translates the same failures into business reliability language, so you can see whether today's errors threaten the target.
 
-### SLO — at a glance
-
-**Availability (SLI)** — the measured proportion of successful requests, color-coded against the objective.
-- **Q: What is an SLI?** A Service Level Indicator is the measured "good request" ratio. The colors compare it to your target: amber below 99.9%, red below 99.5%.
-
-**Error rate (1 − SLI)** and **Total server requests** — the failure proportion and the request count behind it.
-- **Q: Why show the total?** The percentages are only meaningful with sufficient traffic. The request count confirms the sample is large enough to trust.
-
-### Availability & traffic
+**Multi-window burn rate** — a table showing how fast the error budget is being spent over 1 hour, 6 hours, 24 hours, and 3 days.
+- **Q: How should I read it?** A value of 1.0 is exactly on budget. A high short window indicates an acute incident; a high long window indicates a slower issue that will breach the objective if it continues.
 
 **Availability over time (target 99.9%)** — the success ratio across the selected period.
-- **Q: How should I read it?** Dips below the objective line are the moments that consume the error budget. Correlate them with deployments or known incidents.
-
-**Good vs bad requests by service** — failed request counts attributed to each service.
-- **Q: What is it for?** Identifying which services are contributing the failures.
-
-### Burn rate
-
-**Multi-window burn rate** — a table showing how fast the error budget is being spent over four periods: 1 hour, 6 hours, 24 hours, and 3 days.
-- **Q: What does burn rate mean?** It is the rate at which you are consuming the error budget relative to a sustainable pace. A value of 1.0 means you are exactly on budget. A value of 14.4 means a full month's budget would be exhausted in about two days.
-- **Q: Why several windows?** A high value over a short window indicates an acute problem happening now. A high value over a long window indicates a slower, ongoing issue. Comparing them distinguishes the two.
-
-**Error-budget burn rate over time** — the burn rate plotted continuously.
-- **Q: What should I watch for?** Sustained values above 1.0 indicate you are on course to miss the objective. Brief spikes are usually acceptable.
-
-**Errors by service** — failed and total request counts per service. Selecting a row opens that service's error traces.
+- **Q: What should I watch for?** Dips below the objective line are the moments that consume budget. Correlate them with deployments or known incidents.
 
 ---
 
-## 3. Logs — Overview
+## 2. Logs — Overview
 
 **Data source:** Logs  ·  **Filters:** Service, Severity
-**Purpose:** Cluster-wide log triage — identifying what is failing, whether it is new, and providing a live view of errors as they occur.
+**Purpose:** Cluster-wide log triage — identifying what is failing, whether it is new, where it is coming from, and providing a live view of errors as they occur.
 
 > This source combines Kubernetes container output (captured from every pod) with structured application logs. It contains data even when applications are not instrumented for tracing.
 
 ### Volume & error rate
 
 **Log volume by severity** — total log throughput, segmented by severity level.
-- **Q: How should I read it?** The overall height reflects logging volume; the error and fatal segments are the focus. A sharp rise in total volume can indicate a log storm from a component stuck in a retry loop.
+- **Q: How should I read it?** The overall height reflects logging volume; the error and fatal segments are the focus. Error filters use `SeverityNumber >= 17` and lowercase severity text, so numeric and textual severities both match.
 
 **Error / fatal rate by service** — the rate of error and fatal logs per service.
 - **Q: What is it for?** Identifying which service began reporting errors, and when.
@@ -151,18 +134,21 @@ Both styles respect the dashboard filters described below.
 **Top error messages** — the most frequent error and fatal messages. Selecting a row opens those log entries.
 - **Q: How should I use it?** A small number of messages usually accounts for most of the volume. Addressing those has the greatest impact.
 
+**Normalized error signatures** and **top error sources by namespace/pod** — grouped errors with their most likely origin.
+- **Q: Why is this useful?** Signatures collapse noisy variable text into stable groups, while source tables tell you which namespace or pod is producing them.
+
 **New log patterns in last 24h (vs prior 7d)** — error patterns that have appeared in the last day but not in the preceding week.
 - **Q: How does it identify a "pattern"?** It normalises each message by replacing variable elements such as numbers and identifiers with placeholders, so that otherwise identical messages are grouped together. It then reports only those patterns that are genuinely new relative to the prior week.
 - **Q: Why is this valuable?** New error signatures are a strong early indicator that a recent deployment or configuration change has introduced a problem. This chart highlights issues that have only just begun.
 
 ### Live stream
 
-**Live error stream** — a continuously updating view of error and fatal logs, showing timestamp, severity, service, and message.
+**Live error stream** — a continuously updating view of error and fatal logs, showing timestamp, severity, service, namespace/pod, and message.
 - **Q: What is it for?** Following errors in real time during an active investigation.
 
 ---
 
-## 4. Kubernetes — Infrastructure
+## 3. Kubernetes — Infrastructure
 
 **Data source:** Metrics (Kubernetes)  ·  **Filters:** Namespace
 **Purpose:** The health of the cluster that hosts your applications — its nodes, pods, and namespaces.
@@ -188,7 +174,7 @@ Both styles respect the dashboard filters described below.
 **Deployment availability (ready ÷ desired)** — the proportion of desired replicas that are running.
 - **Q: How should I read it?** 100% means every replica is available. A lower value indicates a stalled rollout or crashing pods.
 
-**Pods by phase** — the count of pods in each lifecycle phase, by namespace.
+**Pods by phase** — the true count of pods in each lifecycle phase, by namespace.
 - **Q: How should I read it?** A predominance of *Running* is healthy. A growing *Pending* count indicates pods that cannot be scheduled; *Failed* indicates crashes.
 
 **Pods — status & resources** — a detailed table including phase, CPU and memory usage against limits, age, and restart count, ordered by restarts.
@@ -196,6 +182,11 @@ Both styles respect the dashboard filters described below.
 
 **Pod CPU vs limit %** and **Pod memory vs limit %** — resource usage as a percentage of each pod's configured limit.
 - **Q: Why measure against the limit?** Kubernetes throttles CPU and terminates containers for memory at the limit. CPU near 100% of its limit indicates throttling (and slowness); memory near 100% indicates the pod is about to be terminated.
+
+### Saturation & restarts
+
+**Pods not Running**, **container restarts**, **node memory saturation**, and **top pods by restarts** — the fast path to crash loops and pressure.
+- **Q: How should I read it?** Start with pods not Running and restart leaders, then check node memory saturation to decide whether the failure is app-specific or resource pressure on the node.
 
 ### Namespaces
 
@@ -206,29 +197,29 @@ Both styles respect the dashboard filters described below.
 
 ---
 
-## 5. OpenTelemetry Collector — Pipeline Health
+## 4. OpenTelemetry Collector — Pipeline Health
 
 **Data source:** Metrics (collector self-telemetry)  ·  **Filters:** Collector instance
 **Purpose:** Confirms that the telemetry pipeline itself is healthy. If this dashboard shows problems, other dashboards may be missing data — check here first.
 
 ### Pipeline — at a glance
 
-**Refused spans** and **Failed spans** — data the pipeline could not accept or could not deliver. Both are flagged red above zero.
-- **Q: What is the difference?** *Refused* means the collector rejected incoming data, typically because it is overloaded. *Failed* means the collector accepted the data but could not deliver it to ClickHouse, typically due to a connectivity or authentication issue. Either represents lost telemetry.
+**Refused spans**, **refused log records**, **refused metric points**, and **failed sends** — data the pipeline could not accept or could not deliver. All are flagged red above zero.
+- **Q: What is the difference?** *Refused* means the collector rejected incoming data, typically because it is overloaded. *Failed sends* means the collector accepted the data but could not deliver it to ClickHouse, typically due to a connectivity or authentication issue. Either represents lost telemetry.
 
-**Exporter queue size** and **Exporter in-flight requests** — the backlog of data awaiting delivery.
-- **Q: How should I read it?** A continuously growing queue means the collector is receiving data faster than it can deliver it. If unaddressed, the queue fills and the collector begins refusing data.
+**Exporter queue utilization %** and **Exporter in-flight requests** — the backlog of data awaiting delivery.
+- **Q: How should I read it?** A utilization line climbing toward 100% means the collector is receiving data faster than it can deliver it. If unaddressed, the queue fills and the collector begins refusing data.
 
 ### Traces pipeline
 
 **Spans: accepted vs refused vs failed** — accepted spans should dominate; refused and failed should remain near zero.
-**Exporter sent spans** — should track the accepted volume, confirming data flows through.
+**Exporter sent spans** and **send failures** — sent should track accepted volume; failures should remain at zero.
 **Exporter queue size vs capacity** — the gap between the two is your safety margin; a queue approaching capacity is a warning.
 **Processor incoming vs outgoing items** — the two lines should overlap. A gap indicates data was dropped within the pipeline.
 
 ### Logs & metrics pipeline
 
-**Accepted log records vs metric points** — the ingest rate for logs and metrics.
+**Accepted vs refused log records** and **accepted vs refused metric points** — the ingest and rejection rates for logs and metrics.
 **Scraper: scraped vs errored metric points** — for metrics gathered by scraping. Errors above zero indicate the collector cannot reach a target it is configured to scrape.
 
 ### Collector resources
@@ -238,36 +229,36 @@ Both styles respect the dashboard filters described below.
 
 ---
 
-## 6. ClickHouse — Cluster Health
+## 5. ClickHouse — Operations
 
-**Data source:** Metrics (ClickHouse)  ·  no filters
-**Purpose:** The vital signs of the ClickHouse database that stores your observability data.
+**Data source:** Metrics (ClickHouse) and ClickHouse system tables (SQL)  ·  no filters
+**Purpose:** The operational vital signs of the ClickHouse database that stores your observability data.
 
-### Cluster health — at a glance
+### Operations — at a glance
 
-**Running queries**, **Max replication lag (s)**, **Readonly replicas**, and **Memory tracking**.
-- **Q: What indicates a problem?** Rising replication lag means a replica is falling behind, which can produce stale reads. A replica becoming read-only usually indicates it has lost its coordination (Keeper) connection. Memory tracking approaching the server limit means queries will begin to fail.
+**Disk free %**, **Running queries**, **Active merges**, **Pending mutations**, and **Memory tracking**.
+- **Q: What indicates a problem?** Low disk free %, rising active merges, or growing pending mutations means ClickHouse is struggling to keep up with writes or background work. Memory tracking approaching the server limit means queries will begin to fail.
 
 ### Query activity
 
-**Query rate (vs previous week)** — current query volume overlaid with the same period a week earlier.
-- **Q: What is it for?** Distinguishing normal variation from unusual load. Week-over-week comparison provides a reliable baseline.
+**Query rate** — current query volume as per-instance deltas/rates over the selected time picker, not raw cumulative counters.
+- **Q: What is it for?** Distinguishing normal variation from unusual load while respecting the dashboard time range.
 
 **Failed queries**, **Inserted rows rate**, and **SELECT vs INSERT queries** — the read/write balance and confirmation that writes (your telemetry ingest) are flowing.
 
 ### Merges & mutations
 
-**Merges in progress** and **Mutations in progress**.
-- **Q: What are these?** ClickHouse continuously merges small data segments into larger ones in the background; this is normal and expected. A persistently high merge count can indicate the database is struggling to keep pace with the insert rate. Mutations are heavier operations, and many in progress can slow the system.
+**Active merges** from `system.merges` and **Pending mutations** from `system.mutations`.
+- **Q: What are these?** ClickHouse continuously merges small data segments into larger ones in the background; this is normal and expected. A persistently high merge count can indicate the database is struggling to keep pace with the insert rate. Pending mutations are heavier operations waiting to finish, and many in progress can slow the system.
 
-### I/O & cache
+### Disk & memory
 
-**Page-cache read bytes: cache vs source** — how much read traffic is served from cache versus re-read from storage. A higher proportion from cache indicates faster queries.
-**Async insert bytes** — the throughput of batched asynchronous inserts.
+**Disk free %** from `system.disks` and **Memory tracking** from ClickHouse metrics.
+- **Q: How should I read it?** Disk trending toward full is urgent because it blocks writes; memory tracking near the server limit predicts query failures.
 
 ---
 
-## 7. ClickHouse — Query Performance & Errors
+## 6. ClickHouse — Query Performance & Errors
 
 **Data source:** ClickHouse `system.query_log` (SQL) and ClickHouse metrics  ·  no filters
 **Purpose:** The database administrator's view — which queries are slow, resource-intensive, or failing.
@@ -299,7 +290,7 @@ Both styles respect the dashboard filters described below.
 
 ---
 
-## 8. ClickHouse — Storage & MergeTree
+## 7. ClickHouse — Storage & MergeTree
 
 **Data source:** ClickHouse `system.parts` and `system.part_log` (SQL)  ·  no filters
 **Purpose:** Disk usage, compression, and the health of ClickHouse's background storage engine.
@@ -327,7 +318,7 @@ Both styles respect the dashboard filters described below.
 
 ---
 
-## 9. ClickHouse — Keeper & Replication
+## 8. ClickHouse — Keeper & Replication
 
 **Data source:** ClickHouse Keeper metrics and replication system tables (SQL)  ·  no filters
 **Purpose:** The coordination layer (ClickHouse Keeper) that enables replication and distributed operations.
@@ -356,14 +347,14 @@ Both styles respect the dashboard filters described below.
 
 ---
 
-## 10. Executive Overview
+## 9. Executive Overview
 
 **Data source:** Traces, Logs, and Metrics  ·  **Filters:** Service, Namespace
 **Purpose:** A single-page summary of application health, platform health, the most affected services, and data ingest. Suitable for a status check or a shared status display. Charts degrade gracefully — any signal that is not configured simply appears empty while the rest continue to work.
 
 ### Service health — at a glance
 
-**Span error rate (%)**, **Trace volume (spans)**, **Span latency p95**, and **Log error rate (%)**.
+**Server-span error rate (%)**, **request volume (server spans)**, **server-span latency p95**, and **Log error rate (%)**.
 - **Q: What is this for?** Four figures that answer whether the applications are healthy right now. The color rules present them as a simple status indicator.
 
 ### Platform — at a glance
@@ -379,7 +370,7 @@ Both styles respect the dashboard filters described below.
 ### Traffic & ingest
 
 **Ingest throughput — spans accepted vs refused** — the rate of telemetry accepted versus rejected by the pipeline. Accepted should dominate and refused should remain at zero.
-**Request rate & errors (traces)** — overall application request volume with the error count overlaid.
+**Request rate & errors (server spans)** — overall application request volume with the error count overlaid.
 
 ---
 
@@ -389,7 +380,7 @@ Both styles respect the dashboard filters described below.
 | --- | --- | --- |
 | Is anything wrong right now? | Executive Overview | Follow the linked service tables |
 | The application feels slow | Services — RED | Slowest routes → open the traces |
-| Are we meeting our reliability target? | SLO / Error Budget | Review the multi-window burn rate |
+| Are we meeting our reliability target? | Services — RED | Review the SLO strip and multi-window burn rate |
 | Errors started after a deployment | Logs — Overview | *New log patterns* chart |
 | A pod or node looks unhealthy | Kubernetes — Infrastructure | Pods table (restarts, memory vs limit) |
 | A dashboard is unexpectedly empty | Collector — Pipeline Health | Refused/failed spans, scraper errors |

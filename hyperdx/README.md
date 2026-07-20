@@ -53,18 +53,24 @@ flags, and prerequisites are in [Install](#install) below.
 > 📄 **Per-dashboard reference pages** (auto-generated, optional) live in [`docs/`](docs/) — one page
 > per dashboard with a screenshot and every tile's query. Handy for lookups; not needed to install.
 
+**Default dashboards** (`dashboards/` — import these first):
+
 | File | What it shows | Source kind |
 |------|---------------|-------------|
-| `dashboards/clickhouse-health.json` | Query/insert rate, failed queries, memory, merges/mutations, replication lag, readonly replicas | metric |
-| `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod phase, restarts, top pod memory, node filesystem usage | metric |
-| `dashboards/services-red.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency anomaly (z-score), latency heatmap | trace |
-| `dashboards/logs-overview.json` | Log volume by severity, error rate, top errors, **new** error patterns, live error stream | log |
-| `dashboards/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans, exporter queue & sent, processor in/out (drops), scraper errors, collector CPU/mem | metric |
-| `dashboards/clickhouse-queryperf.json` | Query rate by kind, p95/p99 duration, memory/query, exceptions, slowest queries, top error codes (`system.query_log` + metrics) | metric |
-| `dashboards/slo-errorbudget.json` | Per-service availability SLI, error budget, multi-window burn-rate (1h/6h/24h/3d), burn-rate trend | trace |
-| `dashboards/clickhouse-storage-mergetree.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | SQL |
-| `dashboards/clickhouse-keeper-replication.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
-| `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
+| `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (server-span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
+| `dashboards/services-red.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency heatmap — plus a folded-in **SLO strip** (availability SLI, error budget, multi-window burn rate 1h/6h/24h/3d) | trace |
+| `dashboards/logs-overview.json` | Log volume by severity, error rate, normalized error signatures, **new** error patterns, error sources by namespace/pod, live error stream | log |
+| `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod **count** by phase, restarts, saturation, top pod memory, node filesystem usage | metric |
+| `dashboards/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans & metric points, exporter queue utilization & sent, processor in/out (drops), scraper errors, collector CPU/mem | metric |
+| `dashboards/clickhouse-health.json` | **ClickHouse — Operations:** query/insert rate, failed queries, memory tracking, merges/mutations, running queries, disk free %, active merges, pending mutations | metric + SQL |
+
+**Advanced ClickHouse deep-dives** (`dashboards/advanced/` — optional; for ClickHouse operators/DBAs):
+
+| File | What it shows | Source kind |
+|------|---------------|-------------|
+| `dashboards/advanced/clickhouse-queryperf.json` | Query rate by kind, p95/p99 duration, memory/query, exceptions, slowest queries, top error codes (`system.query_log` + metrics) | metric + SQL |
+| `dashboards/advanced/clickhouse-storage-mergetree.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | SQL |
+| `dashboards/advanced/clickhouse-keeper-replication.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
 
 ## Screenshots
 
@@ -78,23 +84,19 @@ demo app flowing — this is what lands after you run `import`. Click any image 
 <table>
 <tr>
 <td width="50%"><b>Services — RED (Rate / Errors / Duration)</b><br><a href="docs/images/services-red.png"><img src="docs/images/services-red.png" alt="Services — RED"></a></td>
-<td width="50%"><b>Services — SLO / Error Budget</b><br><a href="docs/images/slo-errorbudget.png"><img src="docs/images/slo-errorbudget.png" alt="Services — SLO / Error Budget"></a></td>
-</tr>
-<tr>
 <td width="50%"><b>Logs — Overview</b><br><a href="docs/images/logs-overview.png"><img src="docs/images/logs-overview.png" alt="Logs — Overview"></a></td>
+</tr>
+<tr>
 <td width="50%"><b>Kubernetes — Infrastructure</b><br><a href="docs/images/kubernetes-infrastructure.png"><img src="docs/images/kubernetes-infrastructure.png" alt="Kubernetes — Infrastructure"></a></td>
-</tr>
-<tr>
 <td width="50%"><b>OTel Collector — Pipeline Health</b><br><a href="docs/images/collector-health.png"><img src="docs/images/collector-health.png" alt="OTel Collector — Pipeline Health"></a></td>
-<td width="50%"><b>ClickHouse — Cluster Health</b><br><a href="docs/images/clickhouse-health.png"><img src="docs/images/clickhouse-health.png" alt="ClickHouse — Cluster Health"></a></td>
 </tr>
 <tr>
-<td width="50%"><b>ClickHouse — Query Performance & Errors</b><br><a href="docs/images/clickhouse-queryperf.png"><img src="docs/images/clickhouse-queryperf.png" alt="ClickHouse — Query Performance & Errors"></a></td>
-<td width="50%"><b>ClickHouse — Storage & MergeTree</b><br><a href="docs/images/clickhouse-storage-mergetree.png"><img src="docs/images/clickhouse-storage-mergetree.png" alt="ClickHouse — Storage & MergeTree"></a></td>
+<td width="50%"><b>ClickHouse — Operations</b><br><a href="docs/images/clickhouse-health.png"><img src="docs/images/clickhouse-health.png" alt="ClickHouse — Operations"></a></td>
+<td width="50%"><b>ClickHouse — Query Performance & Errors <sub>(advanced)</sub></b><br><a href="docs/images/clickhouse-queryperf.png"><img src="docs/images/clickhouse-queryperf.png" alt="ClickHouse — Query Performance & Errors"></a></td>
 </tr>
 <tr>
-<td width="50%"><b>ClickHouse — Keeper & Replication</b><br><a href="docs/images/clickhouse-keeper-replication.png"><img src="docs/images/clickhouse-keeper-replication.png" alt="ClickHouse — Keeper & Replication"></a></td>
-<td width="50%"></td>
+<td width="50%"><b>ClickHouse — Storage & MergeTree <sub>(advanced)</sub></b><br><a href="docs/images/clickhouse-storage-mergetree.png"><img src="docs/images/clickhouse-storage-mergetree.png" alt="ClickHouse — Storage & MergeTree"></a></td>
+<td width="50%"><b>ClickHouse — Keeper & Replication <sub>(advanced)</sub></b><br><a href="docs/images/clickhouse-keeper-replication.png"><img src="docs/images/clickhouse-keeper-replication.png" alt="ClickHouse — Keeper & Replication"></a></td>
 </tr>
 </table>
 
@@ -280,15 +282,14 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 
 | Dashboard | Source kind | Required receivers / signals | Optional (degrades) |
 |-----------|-------------|------------------------------|---------------------|
-| `clickhouse-health` | metric | ClickHouse metrics scraped into OTel — `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum), `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) | `*_InsertedRows`, `ClickHouseMetrics_{Merge,PartMutation,ReadonlyReplica}`, `ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay` |
+| `clickhouse-health` — Operations | metric + SQL | ClickHouse metrics scraped into OTel — `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum), `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) | `*_InsertedRows`, `ClickHouseMetrics_{Merge,PartMutation}`; Raw SQL on `system.disks` / `system.merges` / `system.mutations` powers the disk-free %, active-merges and pending-mutations tiles |
 | `kubernetes-infrastructure` | metric | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}` |
 | `services-red` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`) |
-| `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:ERROR/FATAL`) |
+| `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:error/fatal`) |
 | `collector-health` | metric | OTel Collector self-telemetry scraped into OTel (Prometheus receiver on the collector's `:8888`) — `otelcol_receiver_accepted_spans_total`, `otelcol_exporter_{sent_spans_total,queue_size,queue_capacity}` | processor in/out items, scraper points, collector CPU/mem |
-| `clickhouse-queryperf` | metric + SQL | `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) **and** Raw SQL on `system.query_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from `system.query_log`, and `query_log` must be enabled | `ClickHouseProfileEvents_FailedQuery`; error-code table reads `<metrics_db>.otel_metrics_sum` |
-| `slo-errorbudget` | trace + SQL | Application traces (OTLP) with server spans + `StatusCode` | error spans; burn-rate tiles need the traces table (`{{TRACES_SCHEMA}}.{{TRACES_TABLE}}`) |
-| `clickhouse-storage-mergetree` | SQL only | Raw SQL on `system.parts` + `system.part_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from them (`part_log` is on by default). No metric receivers required. | — (all tiles are Raw SQL) |
-| `clickhouse-keeper-replication` | metric + SQL | None hard-required (degrades). Keeper tiles use `ClickHouseMetrics_ZooKeeper*`/`Keeper*` + `ClickHouseProfileEvents_Keeper*` if scraped | Keeper metrics; **replication tables** (`system.replicas` / `system.replication_queue`) are empty on single-node and populate only on replicated/clustered installs |
+| `clickhouse-queryperf` _(advanced)_ | metric + SQL | `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) **and** Raw SQL on `system.query_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from `system.query_log`, and `query_log` must be enabled | `ClickHouseProfileEvents_FailedQuery`; error-code table reads `<metrics_db>.otel_metrics_sum` |
+| `clickhouse-storage-mergetree` _(advanced)_ | SQL only | Raw SQL on `system.parts` + `system.part_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from them (`part_log` is on by default). No metric receivers required. | — (all tiles are Raw SQL) |
+| `clickhouse-keeper-replication` _(advanced)_ | metric + SQL | None hard-required (degrades). Keeper tiles use `ClickHouseMetrics_ZooKeeper*`/`Keeper*` + `ClickHouseProfileEvents_Keeper*` if scraped | Keeper metrics; **replication tables** (`system.replicas` / `system.replication_queue`) are empty on single-node and populate only on replicated/clustered installs |
 | `executive-overview` | trace + log + metric | None hard-required — cross-cutting roll-up; every tile degrades when its signal is absent | traces (error %, p95, drill-down), logs (error %, drill-down), CH metrics, collector metrics |
 
 **Baseline requirements (all dashboards):** HyperDX **≥ 2.27** (v2 dashboard API), the three
@@ -307,7 +308,7 @@ Every dashboard ships a top-of-page **filter bar** (`filters[]`) so one template
 multi-tenant cluster without editing tiles. Pick a value and all tiles bound to that source
 re-scope. What each exposes:
 
-- **Service** — `services-red`, `slo-errorbudget`, `logs-overview`, `executive-overview`.
+- **Service** — `services-red`, `logs-overview`, `executive-overview`.
 - **Namespace** — `kubernetes-infrastructure`, `executive-overview`.
 - **Collector** — `collector-health` (`service.instance.id`).
 - **Severity** — `logs-overview`.
@@ -337,12 +338,13 @@ Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond sta
 - **`logs-overview` → new log patterns:** normalizes error bodies (digits/IDs → placeholders) and
   surfaces patterns that appeared in the **last 24h but never in the prior 7 days** — a cheap
   Drain-style "what's new since the deploy?" detector.
-- **`clickhouse-queryperf` → `system.query_log`:** query rate by kind, p95/p99 duration, peak
+- **`services-red` → SLO strip:** a folded-in Availability (SLI) number, Error-budget-remaining
+  number, and a **multi-window burn-rate** table over 1h/6h/24h/3d windows against a 99.9% SLO
+  (`>1` = burning budget too fast) — the reliability view that used to be a separate dashboard.
+- **`clickhouse-queryperf` _(advanced)_ → `system.query_log`:** query rate by kind, p95/p99 duration, peak
   memory per query, exceptions, and a slowest-queries table — read directly from ClickHouse's own
   `system.query_log` (requires the HyperDX ClickHouse user to have `SELECT` on it).
-- **`slo-errorbudget` → multi-window burn-rate:** error-budget consumption over 1h/6h/24h/3d
-  windows against a 99.9% SLO, plus a burn-rate trend line (`>1` = burning budget too fast).
-- **`clickhouse-storage-mergetree` → `system.parts` / `system.part_log`:** live disk & compression KPIs, part-event /
+- **`clickhouse-storage-mergetree` _(advanced)_ → `system.parts` / `system.part_log`:** live disk & compression KPIs, part-event /
   merge-duration / bytes & rows time series, largest-tables and **too-many-parts** watch tables, and
   a recent-merges audit — read straight from ClickHouse's own storage system tables (no metrics
   pipeline needed).
@@ -350,8 +352,7 @@ Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond sta
   `onClick` (table-only) to link a clicked row straight into the **Traces** or **Logs** search,
   pre-filtered from the row — turning every table into a triage launcher:
   - `executive-overview`: services → Traces / Logs (`ServiceName = '{{ServiceName}}'`).
-  - `services-red`: slowest routes → Traces (`SpanAttributes['http.route'] = '{{...}}'`).
-  - `slo-errorbudget`: errors-by-service → Traces (`ServiceName = '{{ServiceName}}' AND StatusCode = 'Error'`).
+  - `services-red`: slowest routes → Traces (`SpanAttributes['http.route'] = '{{...}}'`); SLO burn-rate → Traces.
   - `logs-overview`: top error messages → Logs (`Body = '{{Body}}'`).
 
 Both run entirely as ClickHouse SQL — no extra service. Other easy extensions:

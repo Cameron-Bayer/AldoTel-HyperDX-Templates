@@ -14,10 +14,10 @@ per‑install dashboard/tile/webhook IDs at import time.
 | File | Alert | Bound tile (dashboard) | Condition (default) | Interval |
 |---|---|---|---|---|
 | `error-rate.json` | Services error rate | `Error rate %` (services‑red) | ratio **> 2%** | 5m |
-| `slo-fast-burn.json` | SLO fast burn | `Error rate (1 - SLI)` (slo‑errorbudget) | error rate **> 1.44%** (= 14.4× burn of a 99.9% SLO) | 5m |
+| `slo-fast-burn.json` | SLO fast burn | `Availability (SLI)` (services‑red) | availability **< 98.56%** (= 14.4× burn of a 99.9% SLO) | 5m |
 | `collector-drops.json` | Collector dropping telemetry | `Refused spans (should be 0)` (collector‑health) | refused spans **> 0** | 5m |
 | `too-many-parts.json` | ClickHouse too many parts | `Active parts (total)` (ch‑storage) | total active parts **> 5000** | 15m |
-| `replication-lag.json` | ClickHouse replication lag | `Max replication lag (s)` (clickhouse‑health) | lag **> 60s** | 5m |
+| `replication-lag.json` | ClickHouse replication lag | `Max replication lag (s)` (ch‑keeper) | lag **> 60s** | 5m |
 
 All five bind to `line` / `number` tiles (the tile types HyperDX can alert on). Values that HyperDX
 formats as a fraction (error rate, SLI) use fractional thresholds (`0.02` = 2%).

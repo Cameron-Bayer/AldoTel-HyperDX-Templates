@@ -4,7 +4,7 @@
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/clickhouse-queryperf.json` · tag `tmpl:clickhouse-queryperf`
+- **Template:** `dashboards/advanced/clickhouse-queryperf.json` · tag `tmpl:clickhouse-queryperf`
 - **Data required:** ClickHouse metrics scraped into OTel (for the summary number tiles); Most tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled
 
 ## Preview
@@ -15,12 +15,24 @@ _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Query performance — at a glance
 
-### Failed queries — number
+### Failed queries — number · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `ClickHouseProfileEvents_FailedQuery`  (column `MetricName`)
-- **Measure(s):** sum(`Value`)
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT sum(d) AS "Failed queries" FROM (
+  SELECT greatest(max(Value) - min(Value), 0) AS d
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'ClickHouseProfileEvents_FailedQuery'
+  GROUP BY ResourceAttributes['service.instance.id']
+)
+```
+
+</details>
 
 ### Running queries (now) — number
 
@@ -45,12 +57,14 @@ _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        countIf(query_kind = 'Select') AS selects,
        countIf(query_kind = 'Insert') AS inserts,
        countIf(query_kind NOT IN ('Select','Insert')) AS other
 FROM system.query_log
-WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
+WHERE type = 'QueryFinish'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -64,11 +78,13 @@ ORDER BY t
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        quantile(0.95)(query_duration_ms) / 1000 AS p95,
        quantile(0.99)(query_duration_ms) / 1000 AS p99
 FROM system.query_log
-WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
+WHERE type = 'QueryFinish'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -82,11 +98,13 @@ ORDER BY t
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        quantile(0.95)(memory_usage) AS p95,
        max(memory_usage) AS max
 FROM system.query_log
-WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
+WHERE type = 'QueryFinish'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -100,11 +118,12 @@ ORDER BY t
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        countIf(exception_code != 0) AS exceptions
 FROM system.query_log
-WHERE type IN ('QueryFinish','ExceptionWhileProcessing','ExceptionBeforeStart')
-  AND event_time > now() - INTERVAL 6 HOUR
+WHERE type >= 2
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -113,7 +132,7 @@ ORDER BY t
 
 ## Slowest queries & errors
 
-### Slowest queries (last 6h) — table · Raw SQL
+### Slowest queries — table · Raw SQL
 
 - **Tables:** `system.query_log`
 
@@ -128,27 +147,32 @@ SELECT event_time,
        read_rows,
        substring(query, 1, 160) AS query
 FROM system.query_log
-WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR
+WHERE type = 'QueryFinish'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 ORDER BY query_duration_ms DESC
 LIMIT 20
 ```
 
 </details>
 
-### Top ClickHouse error codes (last 24h) — table · Raw SQL
+### Top errors (from query_log) — table · Raw SQL
 
-- **Tables:** `default.otel_metrics_sum`
+- **Tables:** `system.query_log`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT replaceOne(MetricName, 'ClickHouseErrorMetric_', '') AS error,
-       toUInt64(max(Value) - min(Value)) AS errors_in_window
-FROM default.otel_metrics_sum
-WHERE MetricName LIKE 'ClickHouseErrorMetric_%' AND TimeUnix > now() - INTERVAL 24 HOUR
-GROUP BY error
-HAVING errors_in_window > 0
-ORDER BY errors_in_window DESC
+SELECT exception_code,
+       count() AS errors,
+       substring(argMax(exception, event_time), 1, 500) AS sample_exception
+FROM system.query_log
+WHERE type >= 2
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+  AND exception_code != 0
+GROUP BY exception_code
+ORDER BY errors DESC
 LIMIT 20
 ```
 

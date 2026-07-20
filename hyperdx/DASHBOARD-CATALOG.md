@@ -4,11 +4,11 @@ A plain-language guide to every dashboard in this pack: **what it's for, why you
 exactly what telemetry it needs, and how to read it.** Use this to decide *which* dashboards to
 import for *your* setup — so nothing lands empty and nothing confuses your team.
 
-> **TL;DR** — There are **10 dashboards** across four telemetry domains (your apps, your Kubernetes
-> cluster, the OpenTelemetry Collector, and ClickHouse itself). They are **not** all-or-nothing:
-> each one lights up only when the matching data pipeline is configured. This guide tells you which
-> ones work with **zero setup**, which need a **collector receiver**, and which need your **apps
-> instrumented** — so you can import exactly the ones that will show data today.
+> **TL;DR** — There are **9 dashboards** across four telemetry domains (your apps, your Kubernetes
+> cluster, the OpenTelemetry Collector, and ClickHouse itself). The **6 default** dashboards live in
+> `hyperdx/dashboards/`; the **3 advanced ClickHouse deep dives** live in
+> `hyperdx/dashboards/advanced/`. `./import.ps1` recurses into `advanced/`, so it still imports all
+> 9 unless you choose a subset. SLO now lives as a compact strip inside **Services — RED**.
 
 ---
 
@@ -21,10 +21,23 @@ import for *your* setup — so nothing lands empty and nothing confuses your tea
    dashboards also need `SELECT` on ClickHouse `system.*` tables, noted per dashboard below.)
 2. **Find your setup tier** in the table below to see what will work out-of-the-box.
 3. **Read the per-dashboard section** for the ones you care about — purpose, value, and gotchas.
-4. **Import** with `./import.ps1` (or `-Only <files>` to import a subset).
+4. **Import** with `./import.ps1` (or `-Only <files>` to import a subset). The importer recurses into
+   `hyperdx/dashboards/advanced/`, so a bare import includes the optional advanced deep dives too.
 
 Every dashboard also has a deep per-tile reference in [`docs/<name>.md`](docs/) with a live
 screenshot. This catalog is the *"which and why"*; those docs are the *"every tile explained."*
+Imported display names are prefixed **`ClickStack ·`**; filenames and stable tags stay as listed.
+
+---
+
+## Dashboard locations
+
+- **`hyperdx/dashboards/`** — the **6 default** dashboards every customer should import:
+  `executive-overview`, `services-red`, `logs-overview`, `kubernetes-infrastructure`,
+  `collector-health`, and `clickhouse-health`.
+- **`hyperdx/dashboards/advanced/`** — **3 advanced ClickHouse deep-dive** dashboards for operators
+  and DBAs: `clickhouse-queryperf`, `clickhouse-storage-mergetree`, and
+  `clickhouse-keeper-replication`.
 
 ---
 
@@ -35,10 +48,10 @@ Each dashboard reads from one (or, for the Executive Overview, all) of them:
 
 | Domain | What produces the data | Dashboards |
 |--------|------------------------|------------|
-| **Your applications** | Your services emit OTLP **traces** and **logs** | `services-red`, `slo-errorbudget`, `logs-overview` |
+| **Your applications** | Your services emit OTLP **traces** and **logs** | `services-red` (RED + SLO strip), `logs-overview` |
 | **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` receivers | `kubernetes-infrastructure` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `collector-health` |
-| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `clickhouse-health`, `clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication` |
+| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `clickhouse-health`; advanced: `clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication` |
 | **Everything (roll-up)** | All of the above; degrades gracefully | `executive-overview` |
 
 ---
@@ -53,7 +66,7 @@ Reads ClickHouse's own `system.*` tables directly over your existing HyperDX Cli
 No metrics pipeline, no collector receivers, no app instrumentation. If HyperDX is running, these
 work.
 
-- **`clickhouse-storage-mergetree`** — disk, compression, merges, parts. *(No required metrics at all.)*
+- **`clickhouse-storage-mergetree`** *(advanced)* — disk, compression, merges, parts. *(No required metrics at all.)*
 
 > Requirement: the HyperDX ClickHouse connection user can `SELECT` from `system.parts` /
 > `system.part_log` (on by default).
@@ -62,11 +75,13 @@ work.
 Add the `clickhouse` (or Prometheus) receiver so ClickHouse's `ProfileEvents`/`Metrics` land as OTel
 metrics. Then these light up.
 
-- **`clickhouse-health`** — cluster-wide query/insert/merge/replication health.
-- **`clickhouse-queryperf`** — *most* tiles are Raw SQL on `system.query_log` (Tier-1-style), but the
-  three summary number tiles need `ClickHouseMetrics_{Query,MemoryTracking}`.
-- **`clickhouse-keeper-replication`** — Keeper/ZooKeeper coordination metrics (and replication tables, which only fill on
-  a **replicated/clustered** ClickHouse — empty on single-node by design).
+- **`clickhouse-health`** — ClickHouse operations: disk free %, active merges, pending mutations,
+  running queries, and memory tracking.
+- **`clickhouse-queryperf`** *(advanced)* — *most* tiles are Raw SQL on `system.query_log`
+  (Tier-1-style), but the summary number tiles need `ClickHouseMetrics_{Query,MemoryTracking}`.
+- **`clickhouse-keeper-replication`** *(advanced)* — Keeper/ZooKeeper coordination metrics (and
+  replication tables, which only fill on a **replicated/clustered** ClickHouse — empty on single-node
+  by design).
 
 ### 🟠 Tier 3 — Needs specific collector receivers
 Your OTel Collector must be deployed with the right receivers (and, for Kubernetes, RBAC).
@@ -78,8 +93,8 @@ Your OTel Collector must be deployed with the right receivers (and, for Kubernet
 Your services must send OpenTelemetry **traces** / **logs**. This is the core ClickStack use case,
 but a bare cluster with un-instrumented apps won't populate these.
 
-- **`services-red`** — needs OTLP **traces** (server spans).
-- **`slo-errorbudget`** — needs OTLP **traces** with `StatusCode`.
+- **`services-red`** — needs OTLP **traces** with server spans (`SpanKind = 'Server'`) and
+  `StatusCode`; includes the compact SLO strip.
 - **`logs-overview`** — needs application/container **logs** (filelog or OTLP).
 
 ### ⭐ Always works (degrades gracefully)
@@ -88,7 +103,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 
 > **The easy path:** if you deploy the **standard ClickStack distribution** (its Helm chart / the
 > reference OTel collector config), it wires up the k8s, collector-self, and ClickHouse receivers for
-> you — so **all 10 light up**. The tiers above matter mainly for hand-rolled or partial setups.
+> you — so all **9 dashboards** can light up. The tiers above matter mainly for hand-rolled or partial setups.
 
 ---
 
@@ -131,19 +146,22 @@ every tile degrades gracefully, it's also the safest way to *see your telemetry 
 you wire up more pipelines.
 
 **What you need.** Nothing hard-required — it shows whatever is flowing. Fills in fully once you have
-traces, logs, ClickHouse metrics, and k8s metrics.
+server spans, logs, ClickHouse metrics, and k8s metrics.
 
 **What you'll see.**
-- **Service health — at a glance:** span error rate %, trace volume, span latency p95, log error rate %.
+- **Service health — at a glance:** server-span error rate %, request volume, server-span latency p95,
+  log error rate %.
 - **Platform — at a glance:** ClickHouse failed queries, ClickHouse running queries, K8s nodes ready,
   collector refused spans.
 - **Top services:** *Services by error rate* → click a row to open **Traces**; *Services by log
   errors* → click a row to open **Logs**.
-- **Traffic & ingest:** ingest throughput (spans accepted vs refused) and request rate & errors.
+- **Traffic & ingest:** ingest throughput (spans accepted vs refused) and request rate & errors from
+  server spans.
 
 **How to read it.** Start top-left and scan right; anything red/non-zero in the "at a glance" rows is
 your cue to click into the matching table below and drill down. Empty tiles = that signal isn't
-flowing yet (see the setup tiers), not an error.
+flowing yet (see the setup tiers), not an error. Counter-based metric tiles show per-instance
+rates/deltas over the selected time range, not raw cumulative totals.
 
 ---
 
@@ -151,59 +169,38 @@ flowing yet (see the setup tiers), not an error.
 *Source: trace · Tier 4 (needs app traces)*
 
 **What it's for.** The classic **RED method** view of your services: how much traffic (Rate), how
-many failures (Errors), and how slow (Duration/latency) — per service and per route.
+many failures (Errors), and how slow (Duration/latency) — per service and per route — plus a compact
+SLO strip at the bottom.
 
 **Why use it / who it's for.** The everyday dashboard for **service owners and SREs**. It answers
 "which service is slow or erroring right now, and on which endpoint?" The slow-routes table links
-straight into Traces so you go from symptom to root-cause exemplar in one click.
+straight into Traces so you go from symptom to root-cause exemplar in one click, while the SLO strip
+shows whether the same failures are burning reliability budget.
 
-**What you need.** OTLP **traces** with server spans (`SpanKind:Server`). Error breakdown tiles also
-use `StatusCode:Error`. *(HTTP-route tiles read `SpanAttributes['http.route']`; pure gRPC/messaging
-services that don't set it show empty rows there while rate/error/latency still work.)*
+**What you need.** OTLP **traces** with server spans (`SpanKind = 'Server'`) and `StatusCode`. *(HTTP-
+route tiles read `SpanAttributes['http.route']`; pure gRPC/messaging services that don't set it show
+empty rows there while rate/error/latency and the SLO strip still work.)*
 
 **What you'll see.**
 - **Rate & errors:** request rate by service; error rate %.
 - **Latency & error breakdown:** p50/p95/p99 latency; errors by status message (pie).
 - **Slow routes & distribution:** slowest routes by p95 (→ Traces); a **latency-anomaly** control
   chart; a server-latency **heatmap**.
+- **SLO strip:** availability (SLI), error-budget remaining, a multi-window burn-rate table
+  (1h / 6h / 24h / 3d), and availability over time against the 99.9% target.
 
 **How to read it.** Watch the error-rate % and p95 lines for spikes; use *Slowest routes* to see
-which endpoint is responsible, then click through to the actual traces. The anomaly tile (below)
-flags spikes relative to each service's own recent baseline, so you don't need to eyeball a raw line.
-
----
-
-### 🔵 Services — SLO / Error Budget — `slo-errorbudget.json`
-*Source: trace · Tier 4 (needs app traces)*
-
-**What it's for.** Turns raw success/failure counts into **SLO language**: availability (SLI), how
-much **error budget** you've burned, and **multi-window burn-rate** alerting math.
-
-**Why use it / who it's for.** For teams that run to **Service Level Objectives** — SREs, platform
-teams, and anyone reporting reliability to the business. It reframes "0.06% errors" as "you're inside
-your 99.9% budget" and shows *how fast* you're spending it, which is what actually predicts a breach.
-
-**What you need.** OTLP **traces** with server spans and `StatusCode`. Burn-rate tiles read the traces
-table directly via SQL.
-
-**What you'll see.**
-- **SLO — at a glance:** availability (SLI), error rate (1 − SLI), total server requests.
-- **Availability & traffic:** availability over time vs a 99.9% target; good vs bad requests by service.
-- **Burn rate:** multi-window burn-rate table (1h / 6h / 24h / 3d), a burn-rate trend line
-  (**> 1 = spending budget faster than the SLO allows**), and errors by service (→ Traces).
-
-**How to read it.** If availability is above target and burn-rate is < 1 across windows, you're
-healthy. A **fast-burn** (short-window burn-rate ≫ 1) means a page-worthy incident; a slow steady
-burn > 1 means you'll breach the monthly budget if nothing changes. The bundled **SLO fast-burn
-alert** watches exactly this.
+which endpoint is responsible, then click through to the actual traces. The anomaly tile flags spikes
+relative to each service's own recent baseline. In the SLO strip, burn rate > 1 means you are spending
+budget faster than the objective allows; a short-window fast burn is page-worthy.
 
 ---
 
 ### 🔵 Logs — Overview — `logs-overview.json`
 *Source: log · Tier 4 (needs app/container logs)*
 
-**What it's for.** Volume, severity mix, top errors, and — the standout feature — **newly appeared
-error patterns**, plus a live error stream.
+**What it's for.** Volume, severity mix, top errors, normalized error signatures, top error sources,
+and — the standout feature — **newly appeared error patterns**, plus a live error stream.
 
 **Why use it / who it's for.** For **anyone triaging an incident or a deploy**. Beyond the usual
 "errors are up" volume chart, its *new patterns* tile answers the far more useful question: *"what
@@ -211,18 +208,18 @@ started happening in the last 24h that wasn't happening before?"* — a cheap, d
 detector.
 
 **What you need.** Application/container **logs** (filelog or OTLP) — any log volume. Error tiles match
-`SeverityNumber >= 17` **or** `SeverityText` ERROR/FATAL, so they catch errors whether your pipeline
-sets the numeric severity, the text one, or both (any casing).
+`SeverityNumber >= 17` and lowercase severity text for error/fatal records, so they catch both
+numeric and textual severity.
 
 **What you'll see.**
 - **Volume & error rate:** log volume by severity; error/fatal rate by service.
-- **Top errors & patterns:** top error messages (→ Logs); **new log patterns in the last 24h vs the
-  prior 7 days**.
+- **Top errors & patterns:** top error messages (→ Logs); normalized error signatures; top error
+  sources by namespace/pod; **new log patterns in the last 24h vs the prior 7 days**.
 - **Live stream:** a live error stream you can watch during a rollout.
 
 **How to read it.** During normal ops, watch the severity mix. After a deploy, go straight to *new
-log patterns* — anything listed there is new noise (or a new bug) introduced recently. Click a top
-error to open the full logs, pre-filtered.
+log patterns* — anything listed there is new noise (or a new bug) introduced recently. Use top
+namespace/pod sources to find where that noise is coming from, then click into the full logs.
 
 ---
 
@@ -242,13 +239,14 @@ desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts`. Filesystem 
 
 **What you'll see.**
 - **Nodes:** CPU (cores) and memory usage; a node status/uptime table; nodes-ready count; filesystem usage %.
-- **Pods:** deployment availability (ready/desired); pods by phase; a pod status & resources table;
-  pod CPU and memory vs their limits (%).
+- **Pods:** deployment availability (ready/desired); pods by phase as a true count by phase; a pod
+  status & resources table; pod CPU and memory vs their limits (%).
+- **Saturation & restarts:** pods not Running; container restarts; node memory saturation; top pods by restarts.
 - **Namespaces:** per-namespace CPU and memory; a namespace summary table.
 
 **How to read it.** Top-down: nodes healthy? → deployments at desired replica count? → any pods stuck
-in a bad phase or near their CPU/memory limits? The *vs limit %* tiles are your early warning for
-OOMKills and throttling.
+in a bad phase or near their CPU/memory limits? The saturation/restarts section is your early warning
+for OOMKills, crash loops, and node pressure.
 
 ---
 
@@ -256,62 +254,65 @@ OOMKills and throttling.
 *Source: metric · Tier 3 (needs collector self-telemetry scraped)*
 
 **What it's for.** Is your **telemetry pipeline itself** healthy? Accepted vs refused vs failed spans,
-exporter queue depth, processor drops, scraper errors, and collector CPU/memory.
+logs, and metric points; exporter queue utilization; processor drops; scraper errors; and collector
+CPU/memory.
 
 **Why use it / who it's for.** For whoever **owns the observability pipeline**. It's the meta-monitor:
-if this dashboard shows refused/failed spans or a full exporter queue, then *every other dashboard's
-data is suspect* because telemetry is being dropped before it lands. This is where you catch "why is
-my data incomplete?"
+if this dashboard shows refused/failed telemetry or a full exporter queue, then *every other
+dashboard's data is suspect* because telemetry is being dropped before it lands. This is where you
+catch "why is my data incomplete?"
 
 **What you need.** The collector's own internal telemetry (Prometheus on the collector's `:8888`)
-scraped back into OTel. Required: `otelcol_receiver_accepted_spans_total`,
-`otelcol_exporter_{sent_spans_total, queue_size, queue_capacity}`.
+scraped back into OTel. Required: receiver accepted/refused counters for spans/logs/metric points and
+exporter sent, send-failed, queue-size, and queue-capacity metrics.
 
 **What you'll see.**
-- **Pipeline — at a glance:** refused spans (should be 0), failed spans (should be 0), exporter queue
-  size, exporter in-flight requests.
+- **Pipeline — at a glance:** refused spans/logs/metric points (should be 0), failed sends (should be 0),
+  exporter queue utilization %, and exporter in-flight requests.
 - **Traces pipeline:** accepted vs refused vs failed spans; exporter sent spans; queue size vs
-  capacity; processor incoming vs outgoing (**a gap = dropped data**).
-- **Logs & metrics pipeline:** accepted log records vs metric points; scraper scraped vs errored.
+  capacity; send-failure lines; processor incoming vs outgoing (**a gap = dropped data**).
+- **Logs & metrics pipeline:** accepted vs refused log records and metric points; scraper scraped vs errored.
 - **Collector resources:** memory (RSS/heap); CPU (rate).
 
-**How to read it.** The two "should be 0" tiles are your headline health. If the exporter queue is
-climbing toward capacity, or incoming > outgoing in the processor tile, the collector can't keep up
+**How to read it.** The "should be 0" tiles are your headline health. If exporter queue utilization
+is climbing toward 100%, or incoming > outgoing in the processor tile, the collector can't keep up
 (back-pressure) and is dropping telemetry — scale it or investigate the export destination. The
 bundled **collector-drops alert** watches refused spans.
 
 ---
 
-### 🟡 ClickHouse — Cluster Health — `clickhouse-health.json`
-*Source: metric · Tier 2 (needs ClickHouse metrics scraped)*
+### 🟡 ClickHouse — Operations — `clickhouse-health.json`
+*Source: metric + SQL · Tier 2 (needs ClickHouse metrics scraped; SQL KPIs use `system.*` tables)*
 
-**What it's for.** The overall health of the **ClickHouse server** backing your stack: query/insert
-throughput, failures, merges/mutations in progress, memory, and replication lag.
+**What it's for.** The operational health of the **ClickHouse server** backing your stack: disk
+headroom, query activity, failed queries, active merges, pending mutations, and memory tracking.
 
 **Why use it / who it's for.** For **ClickHouse operators / DBAs and platform teams**. ClickHouse is
 the engine under HyperDX (and often the customer's own analytics); this is the "is the database
-healthy?" dashboard — throughput trending, failures rising, or replicas falling behind.
+healthy?" dashboard — disk running low, throughput changing, failures rising, or background work
+backing up.
 
-**What you need.** ClickHouse server metrics scraped into OTel (`clickhouse`/Prometheus receiver).
-Required: `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum) and
-`ClickHouseMetrics_{Query,MemoryTracking}` (gauge). Merge/mutation/replica tiles are optional.
+**What you need.** ClickHouse server metrics scraped into OTel (`clickhouse`/Prometheus receiver) plus
+`SELECT` on `system.disks`, `system.merges`, and `system.mutations` for the operational SQL KPIs.
+Required metrics include `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum)
+and `ClickHouseMetrics_{Query,MemoryTracking}` (gauge).
 
 **What you'll see.**
-- **Cluster health — at a glance:** running queries; max replication lag (s); readonly replicas;
+- **Operations — at a glance:** disk free %, running queries, active merges, pending mutations, and
   memory tracking.
-- **Query activity:** query rate (with week-over-week comparison); failed queries; inserted-rows rate;
-  SELECT vs INSERT.
-- **Merges & mutations:** merges in progress; mutations in progress.
+- **Query activity:** query rate as per-instance deltas/rates over the selected time range; failed
+  queries; inserted-rows rate; SELECT vs INSERT.
+- **Merges & mutations:** active merges from `system.merges`; pending mutations from `system.mutations`.
 - **I/O & cache:** page-cache reads (cache vs source bytes); async insert bytes.
 
-**How to read it.** Watch failed queries and replication lag for anomalies; the week-over-week query
-rate line tells you whether load is unusual. Rising readonly replicas or replication lag on a
-clustered install is an early sign of coordination trouble (see `clickhouse-keeper-replication`).
+**How to read it.** Watch disk free %, failed queries, memory tracking, and background work for
+anomalies. A rising active-merge or pending-mutation count means ClickHouse is struggling to keep up;
+open the advanced Storage & MergeTree or Keeper & Replication dashboards when you need a deeper dive.
 
 ---
 
 ### 🟡 ClickHouse — Query Performance & Errors — `clickhouse-queryperf.json`
-*Source: metric + SQL · Tier 2 (SQL tiles need zero setup; summary tiles need CH metrics)*
+*Advanced ClickHouse deep dive · Source: metric + SQL · Tier 2 (SQL tiles need zero setup; summary tiles need CH metrics)*
 
 **What it's for.** A deep look at **query behavior**: rate by kind, p95/p99 latency, peak memory per
 query, exceptions, and the actual **slowest queries** and top error codes — read straight from
@@ -338,7 +339,7 @@ limit predicts OOM'd queries.
 ---
 
 ### 🟢 ClickHouse — Storage & MergeTree — `clickhouse-storage-mergetree.json`
-*Source: SQL only · Tier 1 (works on any ClickHouse, zero setup)*
+*Advanced ClickHouse deep dive · Source: SQL only · Tier 1 (works on any ClickHouse, zero setup)*
 
 **What it's for.** The **storage layer**: disk usage, compression ratio, part counts, and the
 MergeTree churn (inserts, merges, mutations) that governs ClickHouse's health over time.
@@ -366,7 +367,7 @@ frequency or investigate. The bundled **too-many-parts alert** watches this.
 ---
 
 ### 🟡 ClickHouse — Keeper & Replication — `clickhouse-keeper-replication.json`
-*Source: metric + SQL · Tier 2 (Keeper metrics) / replication needs a cluster*
+*Advanced ClickHouse deep dive · Source: metric + SQL · Tier 2 (Keeper metrics) / replication needs a cluster*
 
 **What it's for.** The **coordination layer** of a replicated ClickHouse: Keeper/ZooKeeper sessions,
 request throughput, commit latency, and the **replication status / queue** of your tables.
@@ -395,15 +396,15 @@ that's normal; the "at a glance" session/watch counts still confirm Keeper is al
 
 ## Which dashboards should *I* import?
 
-Pick by role — but remember the **Executive Overview** is a safe first import for everyone.
+Pick by role — but remember the **6 default dashboards** are the safe first import for everyone.
 
 | If you're a… | Start with |
 |--------------|-----------|
 | **Data scientist / analyst** | `executive-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
-| **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `collector-health`, `executive-overview` |
-| **SRE / reliability owner** | `slo-errorbudget`, `services-red`, `collector-health` |
-| **ClickHouse operator / DBA** | `clickhouse-storage-mergetree` (zero-setup), `clickhouse-health`, `clickhouse-queryperf`, `clickhouse-keeper-replication` |
-| **Just kicking the tires (any cluster)** | `clickhouse-storage-mergetree` + `executive-overview` — the two that show *something* with the least setup |
+| **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `collector-health`, `clickhouse-health`, `executive-overview` |
+| **SRE / reliability owner** | `services-red` (RED + SLO strip), `logs-overview`, `collector-health`, `executive-overview` |
+| **ClickHouse operator / DBA** | `clickhouse-health` first, then advanced deep dives: `clickhouse-storage-mergetree`, `clickhouse-queryperf`, `clickhouse-keeper-replication` |
+| **Just kicking the tires (any cluster)** | the 6 defaults — they show what is flowing today and degrade gracefully as you add data |
 
 ---
 

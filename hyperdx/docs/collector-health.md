@@ -22,50 +22,140 @@ These apply to every compatible tile on the dashboard.
 | Collector | `ResourceAttributes['service.instance.id']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
 ## Pipeline — at a glance
+Counters below are shown as **deltas over the selected time range** (not raw cumulative totals). Refused / failed / send-failed should stay at **0**.
 
-### Refused spans (should be 0) — number
+### Refused spans (window) — number · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_receiver_refused_spans_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`)
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_sum`
 
-### Failed spans (should be 0) — number
+<details><summary>SQL query</summary>
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_receiver_failed_spans_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`)
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+```sql
+SELECT sum(d) AS "Refused spans" FROM (
+  SELECT max(Value) - min(Value) AS d
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'otelcol_receiver_refused_spans_total' AND $__filters
+  GROUP BY ResourceAttributes['service.instance.id']
+)
+```
 
-### Exporter queue size — number
+</details>
 
-- **Source / table:** Metrics → `default.otel_metrics_gauge`
-- **Metric(s):** `otelcol_exporter_queue_size`  (column `MetricName`)
-- **Measure(s):** last_value(`Value`)
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+### Refused log records (window) — number · Raw SQL
 
-### Exporter in-flight requests — number
+- **Tables:** `default.otel_metrics_sum`
 
-- **Source / table:** Metrics → `default.otel_metrics_gauge`
-- **Metric(s):** `otelcol_exporter_in_flight_requests`  (column `MetricName`)
-- **Measure(s):** last_value(`Value`)
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+<details><summary>SQL query</summary>
+
+```sql
+SELECT sum(d) AS "Refused logs" FROM (
+  SELECT max(Value) - min(Value) AS d
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'otelcol_receiver_refused_log_records_total' AND $__filters
+  GROUP BY ResourceAttributes['service.instance.id']
+)
+```
+
+</details>
+
+### Refused metric points (window) — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT sum(d) AS "Refused metrics" FROM (
+  SELECT max(Value) - min(Value) AS d
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'otelcol_receiver_refused_metric_points_total' AND $__filters
+  GROUP BY ResourceAttributes['service.instance.id']
+)
+```
+
+</details>
+
+### Exporter queue utilization % — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT max(util) AS "Queue utilization" FROM (
+  SELECT ResourceAttributes['service.instance.id'] AS inst,
+         argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_size') /
+         nullIf(argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_capacity'), 0) AS util
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName IN ('otelcol_exporter_queue_size', 'otelcol_exporter_queue_capacity') AND $__filters
+  GROUP BY inst
+)
+```
+
+</details>
 
 ## Traces pipeline
 
-### Spans: accepted vs refused vs failed — line
+### Spans: accepted vs refused vs failed (per-window rate) — line · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_receiver_accepted_spans_total`, `otelcol_receiver_refused_spans_total`, `otelcol_receiver_failed_spans_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `accepted`; sum(`Value`) as `refused`; sum(`Value`) as `failed`
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_sum`
 
-### Exporter sent spans — line
+<details><summary>SQL query</summary>
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_exporter_sent_spans_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `sent`
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+```sql
+SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
+  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           multiIf(MetricName = 'otelcol_receiver_accepted_spans_total', 'accepted', MetricName = 'otelcol_receiver_refused_spans_total', 'refused', 'failed') AS kind,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName IN ('otelcol_receiver_accepted_spans_total', 'otelcol_receiver_refused_spans_total', 'otelcol_receiver_failed_spans_total') AND $__filters
+    GROUP BY ts, inst, kind
+  )
+)
+GROUP BY ts, kind
+ORDER BY ts
+```
+
+</details>
+
+### Exporter sent spans (per-window rate) — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, sum(greatest(cum - prev, 0)) AS "sent spans" FROM (
+  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName = 'otelcol_exporter_sent_spans_total' AND $__filters
+    GROUP BY ts, inst
+  )
+)
+GROUP BY ts
+ORDER BY ts
+```
+
+</details>
 
 ### Exporter queue size vs capacity — line
 
@@ -74,27 +164,118 @@ These apply to every compatible tile on the dashboard.
 - **Measure(s):** max(`Value`) as `queue size`; max(`Value`) as `capacity`
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
-### Processor incoming vs outgoing items (gap = dropped) — line
+### Exporter queue utilization % (size / capacity) — line · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_processor_incoming_items_total`, `otelcol_processor_outgoing_items_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `incoming`; sum(`Value`) as `outgoing`
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, max(util) AS "queue utilization" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+         ResourceAttributes['service.instance.id'] AS inst,
+         maxIf(Value, MetricName = 'otelcol_exporter_queue_size') /
+         nullIf(maxIf(Value, MetricName = 'otelcol_exporter_queue_capacity'), 0) AS util
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName IN ('otelcol_exporter_queue_size', 'otelcol_exporter_queue_capacity') AND $__filters
+  GROUP BY ts, inst
+)
+GROUP BY ts
+ORDER BY ts
+```
+
+</details>
 
 ## Logs & metrics pipeline
 
-### Accepted log records vs metric points — line
+### Logs: accepted vs refused vs send-failed (per-window rate) — line · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_receiver_accepted_log_records_total`, `otelcol_receiver_accepted_metric_points_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `log records`; sum(`Value`) as `metric points`
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_sum`
 
-### Scraper: scraped vs errored metric points — line
+<details><summary>SQL query</summary>
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_scraper_scraped_metric_points`, `otelcol_scraper_errored_metric_points`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `scraped`; sum(`Value`) as `errored`
+```sql
+SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
+  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           multiIf(MetricName = 'otelcol_receiver_accepted_log_records_total', 'accepted', MetricName = 'otelcol_receiver_refused_log_records_total', 'refused', 'send-failed') AS kind,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName IN ('otelcol_receiver_accepted_log_records_total', 'otelcol_receiver_refused_log_records_total', 'otelcol_exporter_send_failed_log_records_total') AND $__filters
+    GROUP BY ts, inst, kind
+  )
+)
+GROUP BY ts, kind
+ORDER BY ts
+```
+
+</details>
+
+### Metric points: accepted vs refused (per-window rate) — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
+  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           if(MetricName = 'otelcol_receiver_accepted_metric_points_total', 'accepted', 'refused') AS kind,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName IN ('otelcol_receiver_accepted_metric_points_total', 'otelcol_receiver_refused_metric_points_total') AND $__filters
+    GROUP BY ts, inst, kind
+  )
+)
+GROUP BY ts, kind
+ORDER BY ts
+```
+
+</details>
+
+### Scraper: scraped vs errored metric points (per-window rate) — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
+  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           if(MetricName = 'otelcol_scraper_scraped_metric_points', 'scraped', 'errored') AS kind,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName IN ('otelcol_scraper_scraped_metric_points', 'otelcol_scraper_errored_metric_points') AND $__filters
+    GROUP BY ts, inst, kind
+  )
+)
+GROUP BY ts, kind
+ORDER BY ts
+```
+
+</details>
+
+### Exporter in-flight requests — line
+
+- **Source / table:** Metrics → `default.otel_metrics_gauge`
+- **Metric(s):** `otelcol_exporter_in_flight_requests`  (column `MetricName`)
+- **Measure(s):** max(`Value`) as `in-flight`
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
 ## Collector resources
@@ -106,9 +287,28 @@ These apply to every compatible tile on the dashboard.
 - **Measure(s):** max(`Value`) as `rss`; max(`Value`) as `heap alloc`
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
-### Collector CPU seconds (rate) — line
+### Collector CPU (cores, per-window rate) — line · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_sum`
-- **Metric(s):** `otelcol_process_cpu_seconds_total`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `cpu seconds`
-- **Columns used:** `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, sum(greatest(cum - prev, 0)) / {intervalSeconds:Int64} AS "cores" FROM (
+  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev
+  FROM (
+    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+           ResourceAttributes['service.instance.id'] AS inst,
+           max(Value) AS cum
+    FROM default.otel_metrics_sum
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+      AND MetricName = 'otelcol_process_cpu_seconds_total' AND $__filters
+    GROUP BY ts, inst
+  )
+)
+GROUP BY ts
+ORDER BY ts
+```
+
+</details>

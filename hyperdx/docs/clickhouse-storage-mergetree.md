@@ -4,7 +4,7 @@
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/clickhouse-storage-mergetree.json` · tag `tmpl:ch-storage`
+- **Template:** `dashboards/advanced/clickhouse-storage-mergetree.json` · tag `tmpl:ch-storage`
 - **Data required:** All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)
 
 ## Preview
@@ -65,19 +65,20 @@ SELECT sum(rows) FROM system.parts WHERE active
 
 ## Throughput & merges
 
-### Part events / 5 min (inserts, merges, mutations) — stacked_bar · Raw SQL
+### Part events / interval (inserts, merges, mutations) — stacked_bar · Raw SQL
 
 - **Tables:** `system.part_log`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        countIf(event_type = 'NewPart') AS new_parts,
        countIf(event_type = 'MergeParts') AS merges,
        countIf(event_type = 'MutatePart') AS mutations
 FROM system.part_log
-WHERE event_time > now() - INTERVAL 6 HOUR
+WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -91,47 +92,51 @@ ORDER BY t
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        quantile(0.95)(duration_ms) / 1000 AS p95,
        max(duration_ms) / 1000 AS max
 FROM system.part_log
-WHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR
+WHERE event_type = 'MergeParts'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
 
 </details>
 
-### Bytes written — inserted vs merged / 5 min — line · Raw SQL
+### Bytes written — inserted vs merged / interval — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        sumIf(size_in_bytes, event_type = 'NewPart') AS inserted_bytes,
        sumIf(size_in_bytes, event_type = 'MergeParts') AS merged_bytes
 FROM system.part_log
-WHERE event_time > now() - INTERVAL 6 HOUR
+WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
 
 </details>
 
-### Rows processed — inserted vs merged / 5 min — line · Raw SQL
+### Rows processed — inserted vs merged / interval — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
        sumIf(rows, event_type = 'NewPart') AS inserted_rows,
        sumIf(rows, event_type = 'MergeParts') AS merged_rows
 FROM system.part_log
-WHERE event_time > now() - INTERVAL 6 HOUR
+WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 GROUP BY t
 ORDER BY t
 ```
@@ -184,7 +189,7 @@ LIMIT 30
 
 </details>
 
-### Recent merges (last 6h) — table · Raw SQL
+### Recent merges — table · Raw SQL
 
 - **Tables:** `system.part_log`
 
@@ -199,9 +204,105 @@ SELECT event_time,
        merge_reason,
        if(error = 0, 'ok', toString(error)) AS status
 FROM system.part_log
-WHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR
+WHERE event_type = 'MergeParts'
+  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
 ORDER BY event_time DESC
 LIMIT 30
+```
+
+</details>
+
+### Disk free % — number · Raw SQL
+
+- **Tables:** `system.disks`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT min(round(100 * free_space / nullIf(total_space, 0), 1)) AS "Disk free %"
+FROM system.disks
+```
+
+</details>
+
+### Active merges — number · Raw SQL
+
+- **Tables:** `system.merges`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT count() AS "Active merges" FROM system.merges
+```
+
+</details>
+
+### Pending mutations — number · Raw SQL
+
+- **Tables:** `system.mutations`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT count() AS "Pending mutations" FROM system.mutations WHERE is_done = 0
+```
+
+</details>
+
+### Disk free vs used — table · Raw SQL
+
+- **Tables:** `system.disks`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT name,
+       formatReadableSize(free_space) AS free,
+       formatReadableSize(total_space - free_space) AS used,
+       formatReadableSize(total_space) AS total,
+       round(100 * free_space / nullIf(total_space, 0), 1) AS free_pct
+FROM system.disks
+ORDER BY free_pct ASC
+```
+
+</details>
+
+### Current merges — table · Raw SQL
+
+- **Tables:** `system.merges`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT database,
+       table,
+       elapsed,
+       progress,
+       num_parts,
+       formatReadableSize(total_size_bytes_compressed) AS total_size_compressed
+FROM system.merges
+ORDER BY elapsed DESC
+```
+
+</details>
+
+### Active mutations — table · Raw SQL
+
+- **Tables:** `system.mutations`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT database,
+       table,
+       mutation_id,
+       command,
+       parts_to_do,
+       is_done
+FROM system.mutations
+WHERE is_done = 0
+ORDER BY parts_to_do DESC
 ```
 
 </details>

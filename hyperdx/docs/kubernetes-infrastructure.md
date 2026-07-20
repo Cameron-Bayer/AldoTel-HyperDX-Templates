@@ -147,16 +147,29 @@ SELECT ts, node, usage / capacity AS "Filesystem" FROM (
 - **Source / table:** Metrics → `default.otel_metrics_gauge`
 - **Metric(s):** `k8s.deployment.available`, `k8s.deployment.desired`  (column `MetricName`)
 - **Measure(s):** last_value(`Value`) as `available`; last_value(`Value`) as `desired`
-- **Group by:** `ResourceAttributes['k8s.deployment.name']`
-- **Columns used:** `ResourceAttributes['k8s.deployment.name']`, `Value`, `MetricName`, `TimeUnix`
+- **Group by:** `concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.deployment.name'])`
+- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.deployment.name']`, `Value`, `MetricName`, `TimeUnix`
 
-### Pods by phase — stacked_bar
+### Pods by phase (count) — table · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_gauge`
-- **Metric(s):** `k8s.pod.phase`  (column `MetricName`)
-- **Measure(s):** last_value(`Value`) as `pods`
-- **Group by:** `ResourceAttributes['k8s.namespace.name']`
-- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT multiIf(phase = 1, 'Pending', phase = 2, 'Running', phase = 3, 'Succeeded', phase = 4, 'Failed', 'Unknown') AS "Phase", count() AS "Pods" FROM (
+  SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.pod.phase' AND $__filters
+  GROUP BY pod
+)
+GROUP BY phase
+ORDER BY count() DESC
+```
+
+</details>
 
 ### Pods — status & resources — table · Raw SQL
 
@@ -218,21 +231,53 @@ LIMIT 100
 
 ## Namespaces
 
-### Namespace CPU usage (cores) — line
+### Namespace CPU usage (cores) — line · Raw SQL
 
-- **Source / table:** Metrics → `default.otel_metrics_gauge`
-- **Metric(s):** `k8s.pod.cpu.usage`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `cpu`
-- **Group by:** `ResourceAttributes['k8s.namespace.name']`
-- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `Value`, `MetricName`, `TimeUnix`
+- **Tables:** `default.otel_metrics_gauge`
 
-### Namespace memory usage — line
+<details><summary>SQL query</summary>
 
-- **Source / table:** Metrics → `default.otel_metrics_gauge`
-- **Metric(s):** `k8s.pod.memory.usage`  (column `MetricName`)
-- **Measure(s):** sum(`Value`) as `memory`
-- **Group by:** `ResourceAttributes['k8s.namespace.name']`
-- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `Value`, `MetricName`, `TimeUnix`
+```sql
+SELECT ts, ns, sum(pod_cpu) AS "CPU (cores)" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+         ResourceAttributes['k8s.namespace.name'] AS ns,
+         ResourceAttributes['k8s.pod.name'] AS pod,
+         avg(Value) AS pod_cpu
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.pod.cpu.usage' AND $__filters
+  GROUP BY ts, ns, pod
+)
+GROUP BY ts, ns
+ORDER BY ts
+```
+
+</details>
+
+### Namespace memory usage — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, ns, sum(pod_mem) AS "Memory" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+         ResourceAttributes['k8s.namespace.name'] AS ns,
+         ResourceAttributes['k8s.pod.name'] AS pod,
+         avg(Value) AS pod_mem
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.pod.memory.usage' AND $__filters
+  GROUP BY ts, ns, pod
+)
+GROUP BY ts, ns
+ORDER BY ts
+```
+
+</details>
 
 ### Namespaces — phase, CPU, memory — table · Raw SQL
 
@@ -265,6 +310,91 @@ SELECT agg.ns AS Namespace,
   formatReadableSize(agg.mem) AS Memory
 FROM agg LEFT JOIN ph USING (ns)
 ORDER BY agg.cpu DESC
+```
+
+</details>
+
+## Saturation & restarts
+
+### Pods not Running — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(phase != 2) AS "Not running" FROM (
+  SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.pod.phase' AND $__filters
+  GROUP BY pod
+)
+```
+
+</details>
+
+### New container restarts (window) — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT sum(d) AS "New restarts" FROM (
+  SELECT max(Value) - min(Value) AS d
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.container.restarts' AND $__filters
+  GROUP BY ResourceAttributes['k8s.pod.name']
+)
+```
+
+</details>
+
+### Node memory saturation % — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT max(sat) AS "Node mem saturation" FROM (
+  SELECT ResourceAttributes['k8s.node.name'] AS node,
+         argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') /
+         nullIf(argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') + argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.available'), 0) AS sat
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName IN ('k8s.node.memory.usage', 'k8s.node.memory.available')
+  GROUP BY node
+)
+```
+
+</details>
+
+### Top pods by restarts — table · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ns AS "Namespace", pod AS "Pod", toUInt64(restarts) AS "Restarts" FROM (
+  SELECT ResourceAttributes['k8s.namespace.name'] AS ns,
+         ResourceAttributes['k8s.pod.name'] AS pod,
+         argMax(Value, TimeUnix) AS restarts
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.container.restarts' AND $__filters
+  GROUP BY ns, pod
+)
+WHERE restarts > 0
+ORDER BY restarts DESC
+LIMIT 50
 ```
 
 </details>

@@ -133,7 +133,7 @@ function renderTile(t) {
   return lines.join('\n');
 }
 
-function renderDashboard(file, dash) {
+function renderDashboard(file, dash, rel) {
   const req = reqByFile[file] || {};
   const slug = file.replace(/\.json$/, '');
   const tmpl = (dash.tags || []).find((t) => t.startsWith('tmpl:')) || '';
@@ -141,7 +141,7 @@ function renderDashboard(file, dash) {
   out.push('> This page lists the ClickHouse tables and columns behind every visual on the dashboard.', '');
   out.push('[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · ' +
     '[Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)', '');
-  out.push(`- **Template:** ${code('dashboards/' + file)}${tmpl ? ` · tag ${code(tmpl)}` : ''}`);
+  out.push(`- **Template:** ${code('dashboards/' + (rel || file))}${tmpl ? ` · tag ${code(tmpl)}` : ''}`);
   if (req.receivers && req.receivers.length) out.push(`- **Data required:** ${req.receivers.join('; ')}`);
   out.push('');
 
@@ -181,17 +181,28 @@ function renderDashboard(file, dash) {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
 }
 
-const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.json')).sort();
+// List dashboards, recursing one level into dashboards/advanced/ for the
+// optional deep-dive dashboards. `rel` is the path relative to dashboards/.
+function listDashboards() {
+  const out = [];
+  for (const f of fs.readdirSync(srcDir)) if (f.endsWith('.json')) out.push({ file: f, rel: f, sub: '' });
+  const advDir = path.join(srcDir, 'advanced');
+  if (fs.existsSync(advDir)) {
+    for (const f of fs.readdirSync(advDir)) if (f.endsWith('.json')) out.push({ file: f, rel: 'advanced/' + f, sub: 'advanced' });
+  }
+  return out.sort((a, b) => a.rel.localeCompare(b.rel));
+}
+const entries = listDashboards();
 const index = ['# Dashboard reference', '',
   '[← HyperDX install guide](../README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · ' +
   '[Deep dive](../DASHBOARD-DEEP-DIVE.md)', '',
   'Detailed table/column breakdown for each dashboard visual.', '', '| Dashboard | Reference |', '|---|---|'];
-for (const file of files) {
-  const dash = JSON.parse(fs.readFileSync(path.join(srcDir, file), 'utf8'));
+for (const { file, rel, sub } of entries) {
+  const dash = JSON.parse(fs.readFileSync(path.join(srcDir, rel), 'utf8'));
   const slug = file.replace(/\.json$/, '');
-  fs.writeFileSync(path.join(outDir, slug + '.md'), renderDashboard(file, dash), 'utf8');
-  index.push(`| ${dash.name} | [${slug}.md](${slug}.md) |`);
+  fs.writeFileSync(path.join(outDir, slug + '.md'), renderDashboard(file, dash, rel), 'utf8');
+  index.push(`| ${dash.name}${sub ? ' _(advanced)_' : ''} | [${slug}.md](${slug}.md) |`);
   console.log(`docs/${slug}.md`);
 }
 fs.writeFileSync(path.join(outDir, 'README.md'), index.join('\n') + '\n', 'utf8');
-console.log(`docs/README.md (index of ${files.length})`);
+console.log(`docs/README.md (index of ${entries.length})`);

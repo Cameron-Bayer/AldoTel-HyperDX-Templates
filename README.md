@@ -38,7 +38,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── README.md                 Section guide: install, pre-flight, alerts
 │   ├── DASHBOARD-CATALOG.md      Plain-language, per-dashboard field guide (setup tiers)
 │   ├── DASHBOARD-DEEP-DIVE.md    Tile-by-tile Q&A for every dashboard
-│   ├── dashboards/               10 dashboard templates (*.json)
+│   ├── dashboards/               9 dashboard templates (*.json) — 6 default + advanced/ (3 ClickHouse deep-dives)
 │   ├── alerts/                   Importable alert definitions + README
 │   ├── docs/                     Auto-generated per-dashboard reference + images
 │   ├── gen-docs.js               Regenerates docs/ from the templates
@@ -66,9 +66,10 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 
 ## 🔎 HyperDX section
 
-Ten per-domain HyperDX dashboards (services RED, logs, Kubernetes, SLO/error-budget,
-collector health, and the ClickHouse fleet) plus an optional **alerts pack**. Everything
-is portable: the importer resolves your source/connection IDs at install time.
+Nine per-domain HyperDX dashboards — six defaults (executive overview, services RED with a
+folded-in SLO strip, logs, Kubernetes, collector health, ClickHouse operations) plus three
+optional ClickHouse deep-dives under `dashboards/advanced/` — with an optional **alerts pack**.
+Everything is portable: the importer resolves your source/connection IDs at install time.
 
 - **Get started:** [`hyperdx/README.md`](hyperdx/README.md) — prerequisites, pre-flight check, install, and flags.
 - **Decide what to import:** [`hyperdx/DASHBOARD-CATALOG.md`](hyperdx/DASHBOARD-CATALOG.md) — what each dashboard is for, what telemetry it needs, grouped by setup tier.

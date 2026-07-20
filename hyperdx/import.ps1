@@ -78,7 +78,7 @@ function Find-Existing($tmplTag) {
 }
 
 # --- select files ---
-$files = Get-ChildItem -Path (Join-Path $PSScriptRoot "dashboards") -Filter *.json
+$files = Get-ChildItem -Path (Join-Path $PSScriptRoot "dashboards") -Filter *.json -Recurse
 if ($Only) {
   $wanted = $Only.Split(',') | ForEach-Object { $_.Trim() }
   $files = $files | Where-Object { $wanted -contains $_.Name }

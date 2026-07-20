@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · ClickHouse — Cluster Health",
+  "name": "ClickStack · ClickHouse — Operations",
   "tags": [
     "clickstack-templates",
     "clickhouse",
@@ -15,7 +15,7 @@
       "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster health — at a glance"
+        "markdown": "#### Operations — at a glance\nQuery/insert/cache counters are shown as **deltas over the selected time range**. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard."
       }
     },
     {
@@ -26,71 +26,62 @@
       "h": 4,
       "config": {
         "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
-          {
-            "aggFn": "last_value",
-            "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_Query",
-            "metricType": "gauge",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT sum(v) AS \"Running queries\" FROM (\n  SELECT argMax(Value, TimeUnix) AS v\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseMetrics_Query'\n  GROUP BY ResourceAttributes['service.instance.id']\n)"
       }
     },
     {
-      "name": "Max replication lag (s)",
+      "name": "Failed queries (window)",
       "x": 6,
       "y": 3,
       "w": 6,
       "h": 4,
       "config": {
         "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
-          {
-            "aggFn": "max",
-            "valueExpression": "Value",
-            "metricName": "ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay",
-            "metricType": "gauge",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ],
+        "sqlTemplate": "SELECT sum(d) AS \"Failed queries\" FROM (\n  SELECT max(Value) - min(Value) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseProfileEvents_FailedQuery'\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
         "colorRules": [
           {
-            "operator": "gte",
-            "value": 30,
-            "color": "chart-error",
-            "label": "Critical"
-          },
-          {
-            "operator": "gte",
-            "value": 5,
+            "operator": "gt",
+            "value": 0,
             "color": "chart-warning",
-            "label": "Warning"
+            "label": "Failures"
           }
         ]
       }
     },
     {
-      "name": "Readonly replicas",
+      "name": "Disk free %",
       "x": 12,
       "y": 3,
       "w": 6,
       "h": 4,
       "config": {
         "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "sqlTemplate": "SELECT min(free_space / total_space) AS \"Disk free\" FROM system.disks WHERE total_space > 0",
+        "colorRules": [
           {
-            "aggFn": "max",
-            "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_ReadonlyReplica",
-            "metricType": "gauge",
-            "where": "",
-            "whereLanguage": "sql"
+            "operator": "lt",
+            "value": 0.15,
+            "color": "chart-warning",
+            "label": "Low"
+          },
+          {
+            "operator": "lt",
+            "value": 0.05,
+            "color": "chart-error",
+            "label": "Critical"
           }
         ]
       }
@@ -103,20 +94,14 @@
       "h": 4,
       "config": {
         "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
-          "output": "byte"
+          "output": "byte",
+          "numericUnit": "bytes_iec"
         },
-        "select": [
-          {
-            "aggFn": "max",
-            "valueExpression": "Value",
-            "metricName": "ClickHouseMetrics_MemoryTracking",
-            "metricType": "gauge",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT sum(v) AS \"Memory tracked\" FROM (\n  SELECT argMax(Value, TimeUnix) AS v\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseMetrics_MemoryTracking'\n  GROUP BY ResourceAttributes['service.instance.id']\n)"
       }
     },
     {
@@ -131,101 +116,59 @@
       }
     },
     {
-      "name": "Query rate (vs previous week)",
+      "name": "Query rate (per-window)",
       "x": 0,
       "y": 10,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "compareToPreviousPeriod": true,
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "queries",
-            "metricName": "ClickHouseProfileEvents_Query",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"queries\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'ClickHouseProfileEvents_Query'\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
       }
     },
     {
-      "name": "Failed queries",
+      "name": "Failed queries (per-window)",
       "x": 12,
       "y": 10,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "failed",
-            "metricName": "ClickHouseProfileEvents_FailedQuery",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"failed\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'ClickHouseProfileEvents_FailedQuery'\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
       }
     },
     {
-      "name": "Inserted rows rate",
+      "name": "Inserted rows (per-window)",
       "x": 0,
       "y": 16,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "rows",
-            "metricName": "ClickHouseProfileEvents_InsertedRows",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"rows\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'ClickHouseProfileEvents_InsertedRows'\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
       }
     },
     {
-      "name": "SELECT vs INSERT queries",
+      "name": "SELECT vs INSERT queries (per-window)",
       "x": 12,
       "y": 16,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "select",
-            "metricName": "ClickHouseProfileEvents_SelectQuery",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          },
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "insert",
-            "metricName": "ClickHouseProfileEvents_InsertQuery",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (\n  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           if(MetricName = 'ClickHouseProfileEvents_SelectQuery', 'select', 'insert') AS kind,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('ClickHouseProfileEvents_SelectQuery', 'ClickHouseProfileEvents_InsertQuery')\n    GROUP BY ts, inst, kind\n  )\n)\nGROUP BY ts, kind\nORDER BY ts"
       }
     },
     {
@@ -240,8 +183,44 @@
       }
     },
     {
-      "name": "Merges in progress",
+      "name": "Active merges",
       "x": 0,
+      "y": 25,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT count() AS \"Active merges\" FROM system.merges"
+      }
+    },
+    {
+      "name": "Pending mutations",
+      "x": 6,
+      "y": 25,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT count() AS \"Pending mutations\" FROM system.mutations WHERE is_done = 0",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Mutations running"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Merges in progress (gauge)",
+      "x": 12,
       "y": 25,
       "w": 12,
       "h": 6,
@@ -257,20 +236,7 @@
             "metricType": "gauge",
             "where": "",
             "whereLanguage": "sql"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Mutations in progress",
-      "x": 12,
-      "y": 25,
-      "w": 12,
-      "h": 6,
-      "config": {
-        "displayType": "line",
-        "sourceId": "{{METRICS_SOURCE_ID}}",
-        "select": [
+          },
           {
             "aggFn": "max",
             "valueExpression": "Value",
@@ -295,64 +261,39 @@
       }
     },
     {
-      "name": "Page-cache read bytes: cache vs source",
+      "name": "Page-cache read bytes: cache vs source (per-window)",
       "x": 0,
       "y": 34,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "byte",
           "numericUnit": "bytes_iec"
         },
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "from cache",
-            "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          },
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "from source",
-            "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromSourceBytes",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (\n  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           if(MetricName = 'ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes', 'from cache', 'from source') AS kind,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes', 'ClickHouseProfileEvents_CachedReadBufferReadFromSourceBytes')\n    GROUP BY ts, inst, kind\n  )\n)\nGROUP BY ts, kind\nORDER BY ts"
       }
     },
     {
-      "name": "Async insert bytes",
+      "name": "Async insert bytes (per-window)",
       "x": 12,
       "y": 34,
       "w": 12,
       "h": 6,
       "config": {
         "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "byte",
           "numericUnit": "bytes_iec"
         },
-        "select": [
-          {
-            "aggFn": "sum",
-            "valueExpression": "Value",
-            "alias": "bytes",
-            "metricName": "ClickHouseProfileEvents_AsyncInsertBytes",
-            "metricType": "sum",
-            "where": "",
-            "whereLanguage": "sql"
-          }
-        ]
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"bytes\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'ClickHouseProfileEvents_AsyncInsertBytes'\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
       }
     }
   ]

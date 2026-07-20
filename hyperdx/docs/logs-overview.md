@@ -34,20 +34,34 @@ These apply to every compatible tile on the dashboard.
 ### Error / fatal rate by service — line
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** count(*) as `errors`  — where `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
+- **Measure(s):** count(*) as `errors`  — where `SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal` (lucene)
 - **Group by:** `ServiceName`
 - **Columns used:** `ServiceName`, `SeverityText`
 
 ## Top errors & patterns
 
-### Top error messages — table
+### Top error signatures (normalized) — table · Raw SQL
 
-- **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** count(*) as `count`  — where `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
-- **Group by:** `Body`
-- **Order by:** `count DESC`
-- **Drill-down:** click a row → opens search
-- **Columns used:** `SeverityText`, `Body`
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS "Service", pattern AS "Signature", count() AS "Count" FROM (
+  SELECT ServiceName,
+         replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS pattern
+  FROM default.otel_logs
+  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))
+    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND $__filters
+)
+GROUP BY ServiceName, pattern
+ORDER BY count() DESC
+LIMIT 50
+```
+
+</details>
 
 ### New log patterns in last 24h (vs prior 7d) — table · Raw SQL
 
@@ -80,6 +94,26 @@ LIMIT 50
 ### Live error stream — search
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Columns shown:** `Timestamp, SeverityText, ServiceName, Body`
-- **Filter:** `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
-- **Columns used:** `ServiceName`, `SeverityText`, `Body`, `Timestamp`
+- **Columns shown:** `Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body`
+- **Filter:** `SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal` (lucene)
+- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.pod.name']`, `ServiceName`, `SeverityText`, `Body`, `Timestamp`
+
+### Top error sources (namespace / pod) — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ResourceAttributes['k8s.namespace.name'] AS "Namespace", ResourceAttributes['k8s.pod.name'] AS "Pod", ServiceName AS "Service", count() AS "Errors"
+FROM default.otel_logs
+WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))
+  AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+  AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+  AND $__filters
+GROUP BY "Namespace", "Pod", ServiceName
+ORDER BY count() DESC
+LIMIT 50
+```
+
+</details>

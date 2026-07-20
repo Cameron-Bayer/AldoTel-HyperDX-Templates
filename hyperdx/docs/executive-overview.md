@@ -24,22 +24,23 @@ These apply to every compatible tile on the dashboard.
 
 ## Service health — at a glance
 
-### Span error rate (%) — number
+### Server error rate (%) — number
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** avg(`if(StatusCode = 'Error', 1, 0)`)
-- **Columns used:** `StatusCode`
+- **Measure(s):** avg(`if(StatusCode = 'Error', 1, 0)`)  — where `SpanKind = 'Server'` (sql)
+- **Columns used:** `StatusCode`, `SpanKind`
 
-### Trace volume (spans) — number
-
-- **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** count(*)
-
-### Span latency p95 — number
+### Server requests (spans) — number
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** quantile(`Duration / 1000000000`)
-- **Columns used:** `Duration`
+- **Measure(s):** count(*)  — where `SpanKind = 'Server'` (sql)
+- **Columns used:** `SpanKind`
+
+### Server latency p95 — number
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Measure(s):** quantile(`Duration / 1000000000`)  — where `SpanKind = 'Server'` (sql)
+- **Columns used:** `Duration`, `SpanKind`
 
 ### Log error rate (%) — number
 
@@ -130,11 +131,11 @@ SELECT sum(d) AS "Refused spans" FROM (
 ### Services by error rate — click a row to open Traces — table
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** count(*) as `spans`; avg(`if(StatusCode = 'Error', 100, 0)`) as `err_pct`
+- **Measure(s):** count(*) as `spans`  — where `SpanKind = 'Server'` (sql); avg(`if(StatusCode = 'Error', 100, 0)`) as `err_pct`  — where `SpanKind = 'Server'` (sql)
 - **Group by:** `ServiceName`
 - **Order by:** `err_pct DESC`
 - **Drill-down:** click a row → opens search
-- **Columns used:** `ServiceName`, `StatusCode`
+- **Columns used:** `ServiceName`, `StatusCode`, `SpanKind`
 
 ### Services by log errors — click a row to open Logs — table
 
@@ -177,5 +178,5 @@ ORDER BY ts
 ### Request rate & errors (traces) — line
 
 - **Source / table:** Traces → `default.otel_traces`
-- **Measure(s):** count(*) as `requests`; sum(`if(StatusCode = 'Error', 1, 0)`) as `errors`
-- **Columns used:** `StatusCode`
+- **Measure(s):** count(*) as `requests`  — where `SpanKind = 'Server'` (sql); sum(`if(StatusCode = 'Error', 1, 0)`) as `errors`  — where `SpanKind = 'Server'` (sql)
+- **Columns used:** `StatusCode`, `SpanKind`

@@ -67,7 +67,7 @@
           {
             "aggFn": "count",
             "alias": "errors",
-            "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
+            "where": "SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal",
             "whereLanguage": "lucene"
           }
         ]
@@ -85,33 +85,17 @@
       }
     },
     {
-      "name": "Top error messages",
+      "name": "Top error signatures (normalized)",
       "x": 0,
       "y": 12,
       "w": 24,
       "h": 6,
       "config": {
         "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "groupBy": "Body",
-        "orderBy": "count DESC",
-        "onClick": {
-          "type": "search",
-          "target": {
-            "mode": "id",
-            "id": "{{LOGS_SOURCE_ID}}"
-          },
-          "whereTemplate": "Body = '{{Body}}'",
-          "whereLanguage": "sql"
-        },
-        "select": [
-          {
-            "aggFn": "count",
-            "alias": "count",
-            "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
-            "whereLanguage": "lucene"
-          }
-        ]
+        "sqlTemplate": "SELECT ServiceName AS \"Service\", pattern AS \"Signature\", count() AS \"Count\" FROM (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS pattern\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND $__filters\n)\nGROUP BY ServiceName, pattern\nORDER BY count() DESC\nLIMIT 50"
       }
     },
     {
@@ -148,9 +132,23 @@
       "config": {
         "displayType": "search",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "select": "Timestamp, SeverityText, ServiceName, Body",
-        "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
+        "select": "Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body",
+        "where": "SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal",
         "whereLanguage": "lucene"
+      }
+    },
+    {
+      "name": "Top error sources (namespace / pod)",
+      "x": 0,
+      "y": 34,
+      "w": 24,
+      "h": 6,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\", ResourceAttributes['k8s.pod.name'] AS \"Pod\", ServiceName AS \"Service\", count() AS \"Errors\"\nFROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\nWHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n  AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND $__filters\nGROUP BY \"Namespace\", \"Pod\", ServiceName\nORDER BY count() DESC\nLIMIT 50"
       }
     }
   ]

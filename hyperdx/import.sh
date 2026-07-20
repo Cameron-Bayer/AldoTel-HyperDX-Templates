@@ -76,10 +76,10 @@ existing_filters() {
   echo "$EXISTING" | jq -c --arg id "$1" '[.[] | select(.id==$id)][0].filters // []'
 }
 
-# Build the file list. (Portable read loop — avoids Bash 4's `mapfile`, which
-# stock macOS Bash 3.2 lacks.)
+# Build the file list (recurses into dashboards/advanced/). (Portable read loop —
+# avoids Bash 4's `mapfile`, which stock macOS Bash 3.2 lacks.)
 FILES=()
-while IFS= read -r line; do FILES+=("$line"); done < <(ls "$DIR"/dashboards/*.json)
+while IFS= read -r line; do FILES+=("$line"); done < <(find "$DIR/dashboards" -type f -name '*.json' | sort)
 if [ -n "$ONLY" ]; then
   IFS=',' read -ra WANTED <<< "$ONLY"
   SELECTED=()
