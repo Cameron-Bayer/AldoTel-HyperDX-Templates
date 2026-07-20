@@ -18,6 +18,9 @@ DEPLOYMENT='clickstack-grafana'
 DATASOURCES_CM='clickstack-grafana-datasources'
 DASHBOARDS_CM='clickstack-grafana-dashboards'
 ALERTING_CM='clickstack-grafana-alerting'
+# Fixed data source UID. The provisioned alert rules reference it directly (provisioned
+# rules can't prompt for a data source), and datasource-clickstack-ch.yaml declares it —
+# so it is intentionally NOT configurable.
 DS_UID='clickstack-ch'
 CH_SERVER='clickstack-clickhouse-clickhouse-headless'
 CH_PORT='9000'
@@ -32,7 +35,6 @@ Usage: ./install-k8s.sh [options]
   --datasources-cm <name>     Datasources provisioning ConfigMap (default: clickstack-grafana-datasources)
   --dashboards-cm <name>      Dashboards provisioning ConfigMap (default: clickstack-grafana-dashboards)
   --alerting-cm <name>        Alerting provisioning ConfigMap (default: clickstack-grafana-alerting)
-  --ds-uid <uid>              ClickHouse data source UID (default: clickstack-ch)
   --ch-server <host>          ClickHouse endpoint host (default: clickstack-clickhouse-clickhouse-headless)
   --ch-port <port>            ClickHouse endpoint port (default: 9000)
   --skip-alerts               Install data source + dashboards only
@@ -48,7 +50,6 @@ while [ $# -gt 0 ]; do
     --datasources-cm) DATASOURCES_CM="$2"; shift 2;;
     --dashboards-cm) DASHBOARDS_CM="$2"; shift 2;;
     --alerting-cm) ALERTING_CM="$2"; shift 2;;
-    --ds-uid) DS_UID="$2"; shift 2;;
     --ch-server) CH_SERVER="$2"; shift 2;;
     --ch-port) CH_PORT="$2"; shift 2;;
     --skip-alerts) SKIP_ALERTS=1; shift;;

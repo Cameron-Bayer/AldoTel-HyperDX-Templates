@@ -42,7 +42,6 @@ param(
     [string]$DatasourcesConfigMap = 'clickstack-grafana-datasources',
     [string]$DashboardsConfigMap = 'clickstack-grafana-dashboards',
     [string]$AlertingConfigMap = 'clickstack-grafana-alerting',
-    [string]$DatasourceUid = 'clickstack-ch',
     [string]$ChServer = 'clickstack-clickhouse-clickhouse-headless',
     [int]$ChPort = 9000,
     [switch]$SkipAlerts,
@@ -50,6 +49,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Fixed data source UID. The provisioned alert rules reference it directly (provisioned
+# rules can't prompt for a data source), and datasource-clickstack-ch.yaml declares it —
+# so it is intentionally NOT configurable.
+$DatasourceUid = 'clickstack-ch'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $grafanaDir = Split-Path -Parent $scriptDir
 $dashboardsDir = Join-Path $grafanaDir 'dashboards'
