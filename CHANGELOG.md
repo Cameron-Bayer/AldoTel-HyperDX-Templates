@@ -30,41 +30,25 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   what customers get after `import`.
 - **Preview image embedded at the top of every per-dashboard reference** (`docs/<slug>.md`), wired
   into `gen-docs.js` so the screenshot is included automatically when `docs/images/<slug>.png` exists.
-- **Section headers across every dashboard** — each dashboard is now broken into labelled
-  sections using full-width markdown header tiles (e.g. *At a glance*, *Throughput & latency*,
-  *Nodes / Pods / Namespaces*). Tiles were regrouped and reflowed under their section so related
-  charts sit together and the boards read top-to-bottom instead of as one dense grid. KPI
-  "at a glance" number rows are pulled to the top of each board where they weren't already.
-  Header tiles use an `h4` heading (`####`), a cleared tile title (no redundant corner label), and are
-  3 rows tall (multiline notes 6 rows) so the section text isn't clipped. (Note: HyperDX renders markdown
-  tiles with a plain react-markdown — no raw HTML/CSS — so headers stay left-aligned; centering isn't
-  supported.)
-- **Kubernetes dashboard — namespace views & richer tables** (parity pass vs HyperDX's built-in
-  `/kubernetes` page, using only metrics present in a standard kubeletstats + k8s_cluster setup):
-  - **Namespace CPU (cores)** and **Namespace memory** time charts (sum of pod metrics per namespace).
-  - **Namespaces table** — phase / CPU / memory per namespace.
-  - **Nodes table** — ready / CPU / memory / uptime per node (complements the existing node charts).
-  - **Pods — status & resources** table consolidates the old restarts + pod-memory tables and adds
-    status (`k8s.pod.phase`), CPU-vs-limit %, memory-vs-limit %, and age (`k8s.pod.uptime`).
-  - **Nodes / Pods / Namespaces tables** are authored as **Raw SQL** so values are human-readable:
-    status text (`Running`/`Ready`/`Active` instead of enum codes `2`/`1`), memory via
-    `formatReadableSize` (`3.11 GiB`), uptime/age via `formatReadableTimeDelta` (`23 hours…`),
-    limits as `15.5%`, and proper column headers. Sorted server-side (ORDER BY works in raw SQL).
-  - Note: Raw SQL tables use a fixed 1-hour latest-value window and are not affected by the
-    dashboard Namespace/Node filter variables.
+- **Section headers on every dashboard** — each board is split into labelled sections (e.g. *At a
+  glance*, *Throughput & latency*) with KPI number rows pulled to the top, so dashboards read
+  top-to-bottom instead of as one dense grid.
+- **Kubernetes dashboard — namespace views & richer tables** (parity with HyperDX's built-in
+  `/kubernetes` page, using only standard kubeletstats + k8s_cluster metrics): per-namespace CPU
+  and memory charts; Namespaces, Nodes, and consolidated Pods (status/resources) tables rendered
+  with human-readable status text, sizes, and uptimes.
 
 ### Changed
 
 - **Alerting is now channel-agnostic — Microsoft Teams removed as the default.** Both packs ship a
   **generic webhook** placeholder you point at your own on-call channel (Slack incoming webhook, a
-  Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Grafana's contact point is now a
-  `webhook` type named **ClickStack Alerts** (was a `teams` type named ClickStack Teams; Terraform var
-  `teams_webhook_url` → `alert_webhook_url`); the HyperDX webhook default name is **AldoTel Alerts**
-  (was "AldoTel Alerts (Teams)"). All Teams-specific setup instructions (including the now-retired
-  "Connectors → Incoming Webhook" flow) were removed from the READMEs and importer help.
+  Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Grafana's contact point is a
+  `webhook` type named **ClickStack Alerts** (Terraform var `teams_webhook_url` →
+  `alert_webhook_url`); the HyperDX webhook default name is **ClickStack Alerts**. All
+  Teams-specific setup instructions were removed from the READMEs and importer help.
 - **Repository reorganized into two clear sections.** All HyperDX assets moved under
   [`hyperdx/`](hyperdx/) (dashboards, alerts, docs, `import`/`preflight` scripts, `gen-docs.js`,
-  `requirements.json`, catalog/deep-dive/overview docs) and the Grafana deliverable stays under
+  `requirements.json`, catalog & deep-dive docs) and the Grafana deliverable stays under
   [`grafana/`](grafana/). The root [`README.md`](README.md) is now a **hub** linking to both
   sections. Script relative paths are preserved, so `cd hyperdx` then run the importer as before.
   History preserved via `git mv`.
@@ -77,101 +61,30 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   instead of a bare `14K`), converting `query_duration_ms` to seconds. `Peak memory per query p95
   (bytes)` became **`Peak memory per query — p95 / max`** with a **byte** axis (e.g. `172 MiB`
   instead of `180M`). Verified live on HyperDX 2.27.0.
-- **`services-red` latency anomaly tile reworked into a causal rolling control chart.** The previous
-  tile computed a z-score with a **global** `avg()/stddevPop() OVER ()` across the whole 7-day
-  window, which had two statistical defects: the baseline was **contaminated by the very spike**
-  being detected, and a single whole-window mean/σ ignored normal variation. It now plots **p95
-  against a trailing baseline and ±3σ control band** computed over a **causal window that ends 1h
-  before each point** (`OVER (ORDER BY t ROWS BETWEEN 288 PRECEDING AND 12 PRECEDING)` = trailing
-  ~24h, skipping the last hour so an in-progress incident can't poison its own baseline). All four
-  series are in **ms on one axis**, so an anomaly reads as p95 crossing the upper band. Honors the
-  `Service` filter via `$__filters`; degrades gracefully (bands are null until ~24h of history).
-  Verified live against ClickHouse (HyperDX 2.27.0). Table/column doc regenerated via `gen-docs.js`.
-- **Roomier graphs** — chart tiles (`line`, `stacked_bar`, `heatmap`, `pie`) get an extra
-  grid row of height for better readability; number/table/markdown tiles unchanged, `y` reflowed.
-- **Taller tiles** — every tile's height increased by 1 grid row across all 10 dashboards,
-  with `y` positions reflowed so nothing overlaps (KPIs 3→4, charts 4→5, tables 5→6).
-- **Number formatting consistency** — ratio "rates" now render as true percentages and all
-  percentage stats show **3 decimal places** (`mantissa: 3`):
-  - `executive-overview` Span/Log error-rate KPIs converted from `if(…,100,0)` to a `0–1` fraction
-    with `numberFormat: {output: percent, mantissa: 3}`; `colorRules` thresholds rescaled
-    (`1 → 0.01`, `5 → 0.05`) to match the raw fraction.
-  - `mantissa: 3` applied to existing percent tiles in `kubernetes-infrastructure` (×4),
-    `services-red` (error rate), and `slo-errorbudget` (availability).
-  - Throughput rates (req/s, query/s, packet/s, rows/s) left as counts — they are not percentages.
+- **`services-red` latency anomaly reworked into a causal rolling control chart.** It now plots p95
+  against a trailing baseline and ±3σ control band computed over a causal ~24h window (ending 1h
+  before each point), so an in-progress spike can't poison its own baseline. Honors the `Service`
+  filter; degrades gracefully until enough history exists.
+- **Roomier, taller tiles** across all 10 dashboards for readability, with positions reflowed so
+  nothing overlaps.
+- **Consistent number formatting** — ratio "rates" render as true percentages with 3 decimal
+  places; throughput counts (req/s, query/s, rows/s) left as counts.
 
 ### Fixed
 
-- **Latency/duration tiles were inflated ~1000×** — several tiles fed the raw span `Duration`
-  (nanoseconds) or ClickHouse `duration_ms` (milliseconds) straight into a `numberFormat` of
-  `{ "output": "duration" }`, whose base unit is **seconds**. p95 latencies rendered as
-  `44.08s` (actual ≈ 44 ms) and merge durations as `4.44h`. Fixed by converting the value to
-  seconds in the tile's `valueExpression` / SQL:
-  - **`executive-overview`** — Span latency p95 → `Duration / 1000000000`.
-  - **`services-red`** — Latency p50/p95/p99 line tile and Slowest routes (p95) table →
-    `Duration / 1000000000`. The table now formats **only** the `p95` column as a duration
-    (per-column `numberFormat`), leaving `requests` as a plain count.
-  - **`clickhouse-storage-mergetree`** — Merge duration tile → `duration_ms / 1000`; renamed to
-    "Merge duration — p95 / max".
-  - Two HyperDX quirks drove the fix: `numberFormat.factor` is **stripped on import**, and a
-    builder select with `whereLanguage: "lucene"` has its `valueExpression` **rebuilt from the
-    bare field** server-side (discarding the arithmetic) — so the affected selects use
-    `whereLanguage: "sql"` (`SpanKind = 'Server'`). Verified live (HyperDX 2.27.0): p95 axis reads
-    `100ms / 50ms / 0ms`, merge tile `16s / 8s / 0ms`.
-- **Full filter audit across all 10 dashboards** — dashboard filters in HyperDX are **global**
-  (applied to every tile by column expression, regardless of the filter's declared `sourceId`),
-  so a filter on a column that some tiles' data lacks silently blanks those tiles. Findings & fixes:
-  - **All four ClickHouse dashboards (Cluster Health, Query Performance, Storage, Keeper) had a
-    broken `Instance` filter.** It filtered on `ResourceAttributes['host.name']`, but ClickHouse/Keeper
-    metrics carry **no `host.name`** (verified: 0 of 106k rows) — only `service.instance.id`, which on
-    the metrics source is a noisy 66-value all-pods dropdown. With a single ClickHouse instance in a
-    standard ClickStack deploy the filter added no value and only blanked tiles, so it was **removed**.
-  - **Executive Overview — Service & Namespace filters blanked the infra tiles.** The ClickHouse,
-    collector, and node metric tiles have no app `ServiceName` and no `k8s.namespace.name`, so picking
-    a service or namespace blanked them. Those five tiles (ClickHouse failed/running queries, K8s nodes
-    ready, collector refused spans, ingest throughput) are now **Raw SQL without `$__filters`** — they
-    stay as constant platform context while the Service/Namespace filters cleanly drill the app
-    traces/logs tiles.
-  - **Services RED & SLO/Error-Budget — analytics tiles now honor the Service filter.** The latency
-    z-score anomaly tile and the multi-window / over-time burn-rate tiles were Raw SQL without
-    `$__filters`, so selecting a service left them unfiltered. They now include `$__filters`.
-  - Verified working filters left unchanged: **Collector** (`service.instance.id`, populated on all
-    collector metrics), **Logs** and **Kubernetes** (fixed previously).
-- **Dashboard filters blanked tiles unexpectedly.** Two distinct causes were fixed:
-  - **Kubernetes — Namespace filter blanked the node tiles.** Node metrics (`k8s.node.*`) carry no
-    `k8s.namespace.name`, so a dashboard-global `namespace IN (...)` filter matched 0 rows and the
-    node charts went blank. The four node charts (CPU, memory, filesystem %, nodes-ready) are now
-    authored as **Raw SQL without the `$__filters` macro**, so they ignore the namespace filter and
-    always show the full cluster as context. The Pods and Namespaces tables gained `$__filters` so
-    they *do* honor the namespace filter, and the redundant **Node filter was removed** (it blanked
-    the deployment tile, which has no `k8s.node.name`).
-  - **Logs — "New log patterns" raw-SQL tile was always empty.** It filtered
-    `SeverityText IN ('ERROR','FATAL')` (uppercase) but log severities are stored lowercase
-    (`error`/`fatal`/…), so it never matched. Now uses `lower(SeverityText) IN ('error','fatal')`
-    and includes `$__filters` so it honors the Service/Severity dashboard filters. (Note: the
-    Logs Overview board is intentionally error-focused — filtering to a service with no ERROR/FATAL
-    logs correctly empties the error tiles while "Log volume by severity" still shows all data.)
-- **HyperDX UI could not save dashboards** ("can't save the dashboard") after import. Two
-  independent causes were found and fixed:
-  - **Markdown section-header tiles** must be authored as **config tiles**
-    (`config:{displayType:'markdown', markdown}`), not `series:[{type:'markdown', content}]`. Verified
-    live in MongoDB on 2.27.0 that the config form stores `{displayType:'markdown', markdown, source:'',
-    where:'', select:[], name:''}`. The interim `series` form stored `source:'markdown'`, which the UI
-    flags as a *"The data source for this tile no longer exists."* render error.
-  - **Markdown tile in-place editability:** the external import API **forces `source:''`** for markdown
-    tiles regardless of input. Empty `source` renders fine, but the tile editor's
-    `convertFormStateToSavedChartConfig` only returns a savable config `if (source)` is truthy — so a
-    markdown tile with empty `source` silently fails to save (Save button no-ops, no toast, no PATCH).
-    To make headers editable, the tile needs a **real, existing source id**. The deployed AldoTel
-    instance has all 33 markdown tiles patched in MongoDB to use the logs source id; non-markdown
-    (graph) tiles already have real sources and save normally. Customers importing via the API get
-    render-only headers (edit the template JSON + re-import to change header text).
-  - **Every `select` item now sets `where`/`whereLanguage`** (`where:""`, `whereLanguage:"sql"` when
-    there's no filter). The external import API maps these to internal `aggCondition`/
-    `aggConditionLanguage`; when omitted it stored `null` for both, which renders fine but the UI's
-    internal `SavedChartConfigSchema` rejects on save (those fields must be a string / `'sql'|'lucene'`).
-    Verified by validating every dashboard against the deployed `@hyperdx/common-utils` schema — all 10
-    now pass.
+- **Latency/duration tiles read ~1000× too high.** Several tiles fed raw nanosecond/millisecond
+  values into a duration format whose base unit is seconds (p95 showed `44.08s` for an actual
+  ~44 ms; merge durations showed hours). All affected tiles in `executive-overview`, `services-red`,
+  and `clickhouse-storage-mergetree` now convert to seconds and format correctly.
+- **Dashboard filters no longer blank unrelated tiles.** HyperDX applies dashboard filters
+  globally, so a filter on a column some tiles lack silently emptied them. Audited all 10
+  dashboards: removed the non-working ClickHouse `Instance`/`Node` filters, kept infrastructure
+  tiles as constant context on the Executive Overview, made the Services RED / SLO analytics tiles
+  honor the `Service` filter, and fixed the Logs "new patterns" tile (severity is stored lowercase).
+- **Dashboards can now be saved in the HyperDX UI after import.** Markdown section headers are
+  authored as config tiles and every panel now carries the fields the UI's save validation requires,
+  so imported dashboards edit and save cleanly. (Header text is edit-via-template-and-reimport when
+  imported through the API.)
 
 ### Known
 
@@ -203,7 +116,7 @@ Release candidate for the first customer-downloadable pack. 10 dashboards, verif
 - **Units & formatting** — bytes (`bytes_iec`), percent, and duration; `services-red` latency now
   formats as `duration` (auto-scales via the traces source `durationPrecision`).
 - **Naming/tagging** — stable `tmpl:<slug>` tag on every dashboard for idempotent upserts.
-- **Branding** — every dashboard name is prefixed `AldoTel · …` (shows in the HyperDX title bar/tab; no grid space used).
+- **Branding** — every dashboard name is prefixed `ClickStack · …` (shows in the HyperDX title bar/tab; no grid space used).
 
 ### Tooling
 - `preflight.ps1` / `preflight.sh` — compatibility check driven by `requirements.json`.

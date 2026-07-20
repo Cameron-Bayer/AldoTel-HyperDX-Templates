@@ -1,8 +1,6 @@
-# AldoTel · Logs — Overview
+# ClickStack · Logs — Overview
 
-> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).
-
-This page lists the ClickHouse tables and columns behind every visual on the dashboard.
+> This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
@@ -11,7 +9,7 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 
 ## Preview
 
-![AldoTel · Logs — Overview](images/logs-overview.png)
+![ClickStack · Logs — Overview](images/logs-overview.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

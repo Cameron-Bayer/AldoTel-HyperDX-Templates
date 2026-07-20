@@ -1,8 +1,6 @@
-# AldoTel · OTel Collector — Pipeline Health
+# ClickStack · OTel Collector — Pipeline Health
 
-> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).
-
-This page lists the ClickHouse tables and columns behind every visual on the dashboard.
+> This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
@@ -11,7 +9,7 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 
 ## Preview
 
-![AldoTel · OTel Collector — Pipeline Health](images/collector-health.png)
+![ClickStack · OTel Collector — Pipeline Health](images/collector-health.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

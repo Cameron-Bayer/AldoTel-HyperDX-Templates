@@ -4,7 +4,7 @@
   "dashboard": "ch-storage",
   "tile": "Active parts (total)",
   "alert": {
-    "name": "AldoTel · ClickHouse too many parts",
+    "name": "ClickStack · ClickHouse too many parts",
     "source": "tile",
     "thresholdType": "above",
     "threshold": 5000,

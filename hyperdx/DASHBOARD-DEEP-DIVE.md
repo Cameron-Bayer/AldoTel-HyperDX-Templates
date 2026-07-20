@@ -1,4 +1,4 @@
-# AldoTel ClickStack Dashboards — Deep-Dive & Q&A Guide
+# ClickStack Dashboards — Deep-Dive & Q&A Guide
 
 A visual-by-visual reference for every dashboard in this pack. For each chart you will find **what data it reads**, **how it is calculated**, and a short **question-and-answer** that explains how to interpret it — including what healthy and unhealthy look like, and what to do next.
 
@@ -104,8 +104,8 @@ Both styles respect the dashboard filters described below.
 
 ### SLO — at a glance
 
-**Availability (SLI)** — the measured proportion of successful requests, colour-coded against the objective.
-- **Q: What is an SLI?** A Service Level Indicator is the measured "good request" ratio. The colours compare it to your target: amber below 99.9%, red below 99.5%.
+**Availability (SLI)** — the measured proportion of successful requests, color-coded against the objective.
+- **Q: What is an SLI?** A Service Level Indicator is the measured "good request" ratio. The colors compare it to your target: amber below 99.9%, red below 99.5%.
 
 **Error rate (1 − SLI)** and **Total server requests** — the failure proportion and the request count behind it.
 - **Q: Why show the total?** The percentages are only meaningful with sufficient traffic. The request count confirms the sample is large enough to trust.
@@ -364,7 +364,7 @@ Both styles respect the dashboard filters described below.
 ### Service health — at a glance
 
 **Span error rate (%)**, **Trace volume (spans)**, **Span latency p95**, and **Log error rate (%)**.
-- **Q: What is this for?** Four figures that answer whether the applications are healthy right now. The colour rules present them as a simple status indicator.
+- **Q: What is this for?** Four figures that answer whether the applications are healthy right now. The color rules present them as a simple status indicator.
 
 ### Platform — at a glance
 

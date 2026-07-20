@@ -2,8 +2,10 @@
 # Compatibility pre-flight for the ClickStack dashboard templates.
 #
 # For every metric/field each dashboard needs (see requirements.json), runs a lightweight query
-# via the HyperDX v2 charts API and reports whether data is actually flowing. Tells you which
-# dashboards are safe to import BEFORE you import them.
+# via the HyperDX v2 charts API and reports whether the OTel telemetry each dashboard reads is
+# actually flowing. NOTE: this checks OTel data presence only — it does NOT verify ClickHouse
+# Raw SQL access (system.parts / system.part_log / system.query_log) that the SQL-based
+# dashboards (clickhouse-storage-mergetree, clickhouse-queryperf) additionally require.
 #
 #   OK        all required + optional checks have data
 #   DEGRADED  all required checks pass; some optional tiles will be empty
@@ -136,8 +138,11 @@ for line in "${SUMMARY[@]}"; do echo "$line"; done
 
 echo ""
 if [ "${#RECOMMEND[@]}" -gt 0 ]; then
-  echo "Safe to import:"
+  echo "OTel data present (telemetry tiles will render):"
   for f in "${RECOMMEND[@]}"; do echo "   $f"; done
+  echo ""
+  echo "Note: Raw-SQL dashboards also need the HyperDX ClickHouse user to have SELECT on the"
+  echo "      relevant system.* tables (not checked here) — see requirements.json 'receivers'."
   echo ""
   echo "Then run: ./import.sh --only $(IFS=,; echo "${RECOMMEND[*]}")"
 else

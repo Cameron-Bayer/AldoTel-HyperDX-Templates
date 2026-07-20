@@ -4,10 +4,24 @@ Download-and-go HyperDX dashboards for customers running **Open Source ClickStac
 (HyperDX + ClickHouse + OpenTelemetry). Each domain is a separate dashboard so customers
 enable only what they run.
 
-> **"AldoTel" vs "ClickStack":** *AldoTel* is the author/brand of these templates (you'll see it
-> in each dashboard's title, e.g. `AldoTel · Services — RED`); *ClickStack* is the open-source
-> platform they run on (HyperDX + ClickHouse + OpenTelemetry). You don't need anything called
-> "AldoTel" installed — any ClickStack / HyperDX deployment works.
+## Import in ~5 minutes
+
+```bash
+# 1. Get the templates
+git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
+cd AldoTel-HyperDX-Templates/hyperdx
+
+# 2. Point at your HyperDX API (Team Settings → API Keys → Personal API Access Key)
+export HDX_API_URL="http://localhost:8000"     # PowerShell: $env:HDX_API_URL = "..."
+export HDX_API_KEY="<your Personal API Access Key>"
+
+# 3. Check what has data, then import
+./preflight.sh        # ./preflight.ps1 on Windows — rates each dashboard OK/DEGRADED/FAIL
+./import.sh           # ./import.ps1 on Windows — upserts all dashboards (idempotent)
+```
+
+Prefer a subset? `./import.sh --only services-red.json,logs-overview.json`. Full details,
+flags, and prerequisites are in [Install](#install) below.
 
 > 📖 **New here? Start with the [Dashboard Catalog & Field Guide](DASHBOARD-CATALOG.md)** — a
 > plain-language, per-dashboard breakdown of what each one is for, why you'd use it, exactly what
@@ -185,7 +199,17 @@ data is actually flowing. Each dashboard is rated:
 - **DEGRADED** — all required checks pass; some optional tiles will be empty.
 - **FAIL** — a required check has no data; don't import as-is (your collector isn't sending it).
 
-It prints a `--only` command listing exactly the dashboards that are safe to import.
+It then prints a `--only` command listing the dashboards whose **OTel source data** is present.
+
+> **Scope — what preflight does and does not check.** Preflight verifies only that the
+> **OTel telemetry** each dashboard reads (metrics / traces / logs) is flowing. It does **not**
+> validate ClickHouse **Raw SQL** access. The Raw-SQL dashboards — `clickhouse-storage-mergetree`
+> (all tiles) and the `system.query_log` tiles of `clickhouse-queryperf` — additionally need the
+> HyperDX ClickHouse connection user to be able to `SELECT` from the relevant `system.*` tables
+> (`system.parts`, `system.part_log`, `system.query_log`, with `part_log` / `query_log` enabled).
+> Preflight can't see those permissions, so a Raw-SQL dashboard it lists may still render empty if
+> the connection user lacks `SELECT` on those tables. See the per-dashboard `receivers` notes in
+> [`requirements.json`](./requirements.json) / the [Support matrix](#support-matrix) below.
 
 ## Alerts pack
 
@@ -197,7 +221,7 @@ at your on-call system) when a threshold is breached. Portable and idempotent li
 ```powershell
 # import dashboards first, then:
 ./import-alerts.ps1 -DryRun                     # preview
-./import-alerts.ps1                             # upsert (reuses a webhook named "AldoTel Alerts")
+./import-alerts.ps1                             # upsert (reuses a webhook named "ClickStack Alerts")
 # first-time channel setup (creates the webhook):
 $env:HDX_EMAIL="you@corp.com"; $env:HDX_PASS="***"; $env:HDX_APP_URL="http://localhost:3000"
 ./import-alerts.ps1 -WebhookUrl "https://your-webhook-endpoint.example/hooks/xxxx"
@@ -281,7 +305,7 @@ re-scope. What each exposes:
 - Number tiles support conditional coloring via `colorRules`
   (operators `gt/gte/lt/lte`, palette tokens like `chart-error`, `chart-warning`).
 
-## Data-science tiles (Raw SQL)
+## Advanced SQL / anomaly-detection tiles (Raw SQL)
 
 Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond static charts:
 
@@ -333,8 +357,6 @@ error-budget burn-rate tiles.
 
 ## Notes
 
-- Built against the HyperDX **v2** dashboard API
-  (`packages/api/openapi.json` in the hyperdx repo).
 - **Credentials** — the API key and any webhook URL are environment secrets; keep them out of
   version control.
 - **HTTP-oriented tiles degrade on non-HTTP services.** `services-red`'s route tiles read
@@ -343,3 +365,8 @@ error-budget burn-rate tiles.
 - The importer **upserts** (matches by the `tmpl:<slug>` tag), so re-running updates dashboards in
   place instead of duplicating them. Use `-Delete` / `--delete` to remove them, or
   `-Duplicate` / `--duplicate` to force new copies.
+
+## Maintainers
+
+Regenerating the reference docs, the HyperDX v2 API details, and other maintainer
+workflows are documented in [`../CONTRIBUTING.md`](../CONTRIBUTING.md).

@@ -1,4 +1,4 @@
-# AldoTel ClickStack Dashboards — Customer Catalog & Field Guide
+# ClickStack Dashboards — Customer Catalog & Field Guide
 
 A plain-language guide to every dashboard in this pack: **what it's for, why you'd use it,
 exactly what telemetry it needs, and how to read it.** Use this to decide *which* dashboards to
@@ -16,8 +16,9 @@ import for *your* setup — so nothing lands empty and nothing confuses your tea
 
 1. **Run the pre-flight check first.** `./preflight.ps1` (Windows) or `./preflight.sh` (macOS/Linux)
    queries your live install and rates each dashboard **OK / DEGRADED / FAIL**, then prints an
-   `--only` command listing the ones that are safe to import today. This catalog explains the
-   *why* behind those ratings.
+   `--only` command listing the ones whose **OTel source data** is present today. This catalog
+   explains the *why* behind those ratings. (Pre-flight checks telemetry flow only — the Raw-SQL
+   dashboards also need `SELECT` on ClickHouse `system.*` tables, noted per dashboard below.)
 2. **Find your setup tier** in the table below to see what will work out-of-the-box.
 3. **Read the per-dashboard section** for the ones you care about — purpose, value, and gotchas.
 4. **Import** with `./import.ps1` (or `-Only <files>` to import a subset).
@@ -398,7 +399,7 @@ Pick by role — but remember the **Executive Overview** is a safe first import 
 
 | If you're a… | Start with |
 |--------------|-----------|
-| **Data scientist / analyst** (AldoTel core use case) | `executive-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
+| **Data scientist / analyst** | `executive-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
 | **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `collector-health`, `executive-overview` |
 | **SRE / reliability owner** | `slo-errorbudget`, `services-red`, `collector-health` |
 | **ClickHouse operator / DBA** | `clickhouse-storage-mergetree` (zero-setup), `clickhouse-health`, `clickhouse-queryperf`, `clickhouse-keeper-replication` |

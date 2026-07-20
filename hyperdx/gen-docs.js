@@ -138,8 +138,7 @@ function renderDashboard(file, dash) {
   const slug = file.replace(/\.json$/, '');
   const tmpl = (dash.tags || []).find((t) => t.startsWith('tmpl:')) || '';
   const out = [`# ${dash.name}`, ''];
-  out.push('> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).', '',
-    'This page lists the ClickHouse tables and columns behind every visual on the dashboard.', '');
+  out.push('> This page lists the ClickHouse tables and columns behind every visual on the dashboard.', '');
   out.push('[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · ' +
     '[Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)', '');
   out.push(`- **Template:** ${code('dashboards/' + file)}${tmpl ? ` · tag ${code(tmpl)}` : ''}`);

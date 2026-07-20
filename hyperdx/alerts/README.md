@@ -1,4 +1,4 @@
-# AldoTel alerts pack
+# ClickStack alerts pack
 
 Importable HyperDX **alert** definitions that ride alongside the dashboard templates. Each alert binds
 to a specific dashboard tile and pages a notification channel when a high‑level signal breaches a
@@ -30,7 +30,7 @@ webhook request is received" URL, PagerDuty, Discord, or any HTTP endpoint that 
 
 **Recommended (UI, any channel):** in HyperDX go to **Team Settings → Webhooks**, add a webhook,
 choose the service (`generic` for most endpoints, or `slack` / `incidentio`), paste your channel URL,
-and name it **`AldoTel Alerts`** (or pass your own name with `-WebhookName` / `--webhook-name`). Then
+and name it **`ClickStack Alerts`** (or pass your own name with `-WebhookName` / `--webhook-name`). Then
 run the importer — it looks the webhook up by name.
 
 **Or let the importer create it** — pass `-WebhookUrl` / `--webhook-url` with your endpoint (see the
@@ -44,7 +44,7 @@ Prereq: import the dashboards first (`./import.ps1` / `./import.sh`) so the tile
 # PowerShell
 $env:HDX_API_URL = "http://localhost:8000"; $env:HDX_API_KEY = "<Personal API Access Key>"
 
-# A) webhook already created in the UI (named "AldoTel Alerts"):
+# A) webhook already created in the UI (named "ClickStack Alerts"):
 ./import-alerts.ps1
 ./import-alerts.ps1 -DryRun                      # preview, write nothing
 ./import-alerts.ps1 -Only error-rate.json
@@ -99,7 +99,7 @@ needs only the API key.
   "dashboard": "services-red",          // dashboard tmpl slug (tmpl:<slug> tag)
   "tile": "Error rate %",               // tile matched by name
   "alert": {
-    "name": "AldoTel · Services error rate > 2%",
+    "name": "ClickStack · Services error rate > 2%",
     "source": "tile",
     "thresholdType": "above",           // above | below | above_exclusive | below_or_equal | equal | not_equal | between | not_between
     "threshold": 0.02,

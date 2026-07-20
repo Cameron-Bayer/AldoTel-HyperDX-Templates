@@ -4,8 +4,10 @@
 
 .DESCRIPTION
   For every metric/field each dashboard needs (see requirements.json), runs a lightweight
-  query via the HyperDX v2 charts API and reports whether data is actually flowing. Tells you
-  which dashboards are safe to import BEFORE you import them.
+  query via the HyperDX v2 charts API and reports whether the OTel telemetry each dashboard
+  reads is actually flowing. NOTE: this checks OTel data presence only — it does NOT verify
+  ClickHouse Raw SQL access (system.parts / system.part_log / system.query_log) that the
+  SQL-based dashboards (clickhouse-storage-mergetree, clickhouse-queryperf) additionally require.
 
   Statuses per dashboard:
     OK        all required + optional checks have data
@@ -114,8 +116,11 @@ Write-Host "===== SUMMARY =====" -ForegroundColor Cyan
 $summary | Format-Table -AutoSize
 
 if ($recommend.Count -gt 0) {
-  Write-Host "Safe to import:" -ForegroundColor Green
+  Write-Host "OTel data present (telemetry tiles will render):" -ForegroundColor Green
   $recommend | ForEach-Object { Write-Host "   $_" }
+  Write-Host ""
+  Write-Host "Note: Raw-SQL dashboards also need the HyperDX ClickHouse user to have SELECT on the"
+  Write-Host "      relevant system.* tables (not checked here) — see requirements.json 'receivers'."
   Write-Host ""
   Write-Host "Then run: ./import.ps1 -Only $($recommend -join ',')"
 } else {

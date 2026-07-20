@@ -9,10 +9,6 @@ These complement the per-domain HyperDX dashboards in [`../hyperdx/dashboards/`]
 HyperDX for deep, interactive investigation; Grafana for at-a-glance health and for
 teams that already standardize on Grafana.
 
-> **"AldoTel" vs "ClickStack":** *AldoTel* is the author/brand of these templates; *ClickStack*
-> is the open-source platform they run on (HyperDX + ClickHouse + OpenTelemetry). You don't need
-> anything called "AldoTel" installed — any ClickStack deployment with Grafana works.
-
 > **Running ClickStack on Kubernetes?** Its bundled Grafana uses ephemeral storage, so
 > UI/API imports vanish on the next pod restart. Use the durable ConfigMap-provisioning
 > installer in [`kubernetes/`](kubernetes/README.md) — one command installs the data
@@ -48,24 +44,26 @@ field). This is the one gotcha:
 *Dashboards → New → Import → Upload JSON file →* pick your ClickHouse datasource →
 **Import**. Repeat for all four.
 
-**4. Install the alerts (provisioning, needs a restart)** — copy `grafana/alerting/` onto
-your Grafana server and mount/place it at `/etc/grafana/provisioning/alerting/`, then
-restart Grafana:
+**4. Configure the alerts *before* you install them (so you restart only once)** —
+edit the two YAML files in `alerting/` on disk first:
+   - In `alerting/contact-points.yaml`, replace the placeholder `url` with a
+     webhook URL for the channel you want — a Slack incoming webhook, a Teams
+     Workflow "Post to a channel when a webhook request is received" URL,
+     PagerDuty, Discord, or any HTTP endpoint that accepts a POST.
+   - (Optional) Adjust the `params: [...]` thresholds in `alerting/alert-rules.yaml`
+     (see [alerting/README.md](alerting/README.md#tuning-thresholds)).
+
+**5. Install the alerts (provisioning, one restart)** — copy `grafana/alerting/` onto
+your Grafana server, mount/place it at `/etc/grafana/provisioning/alerting/`, then
+restart Grafana once:
    ```yaml
    # docker-compose / Kubernetes volume mount example
    volumes:
      - ./alerting:/etc/grafana/provisioning/alerting
    ```
    Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (6 rules).
-
-**5. Connect your notification channel + tune thresholds** —
-   - In `alerting/contact-points.yaml`, replace the placeholder `url` with a
-     webhook URL for the channel you want — a Slack incoming webhook, a Teams
-     Workflow "Post to a channel when a webhook request is received" URL,
-     PagerDuty, Discord, or any HTTP endpoint that accepts a POST.
-   - Adjust the `params: [...]` numbers in `alerting/alert-rules.yaml` (see
-     [alerting/README.md](alerting/README.md#tuning-thresholds)).
-   - Restart Grafana again, or `POST /api/admin/provisioning/alerting/reload`.
+   Later threshold tweaks just need a `POST /api/admin/provisioning/alerting/reload`
+   (no full restart).
 
 **6. Verify** — dashboards show live data; every alert rule reports **health = ok**; and
 *Contact points → ClickStack Alerts → Test* delivers a notification to your channel.
@@ -268,26 +266,7 @@ image for full size.
 
 ## Local development harness (maintainers only)
 
-This folder also contains a throwaway Grafana wired to a ClickStack ClickHouse for
-authoring/validating the dashboards. **Customers do not need this.**
-
-```powershell
-# 1. Expose ClickHouse from your cluster
-kubectl port-forward -n clickstack svc/clickstack-clickhouse-clickhouse-headless 9000:9000
-
-# 2. Start the dev Grafana (http://localhost:3005, admin/admin)
-#    Set CH_PASSWORD first — it feeds the dev ClickHouse datasource (no default is baked in).
-$env:CH_PASSWORD = "<your ClickHouse password>"
-docker compose -f grafana/docker-compose.yml up -d
-
-# 3. Regenerate dashboards after editing the generator
-node grafana/gen-dashboards.js
-
-# 4. Validate every panel query against real data
-node grafana/validate.js
-```
-
-- `docker-compose.yml` — dev Grafana with the ClickHouse plugin pre-installed.
-- `provisioning/` — dev data source + dashboard provider (points at `host.docker.internal:9000`).
-- `gen-dashboards.js` — source of truth that emits the shippable JSON in `dashboards/`.
-- `validate.js` — runs each panel's SQL through Grafana's query API and reports row counts.
+Authoring or validating these dashboards? The throwaway dev Grafana, the
+`gen-dashboards.js` generator, and `validate.js` are documented in
+[`../CONTRIBUTING.md`](../CONTRIBUTING.md). **Customers do not need any of this** to
+import and use the dashboards.

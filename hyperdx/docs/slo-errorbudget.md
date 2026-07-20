@@ -1,8 +1,6 @@
-# AldoTel · Services — SLO / Error Budget
+# ClickStack · Services — SLO / Error Budget
 
-> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).
-
-This page lists the ClickHouse tables and columns behind every visual on the dashboard.
+> This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
@@ -11,7 +9,7 @@ This page lists the ClickHouse tables and columns behind every visual on the das
 
 ## Preview
 
-![AldoTel · Services — SLO / Error Budget](images/slo-errorbudget.png)
+![ClickStack · Services — SLO / Error Budget](images/slo-errorbudget.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

@@ -4,7 +4,7 @@
   "dashboard": "clickhouse-health",
   "tile": "Max replication lag (s)",
   "alert": {
-    "name": "AldoTel · ClickHouse replication lag > 60s",
+    "name": "ClickStack · ClickHouse replication lag > 60s",
     "source": "tile",
     "thresholdType": "above",
     "threshold": 60,

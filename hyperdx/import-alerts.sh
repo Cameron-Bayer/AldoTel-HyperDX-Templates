@@ -12,7 +12,7 @@
 # (or `slack` / `incidentio`) service — point it at your own on-call channel (a Slack incoming webhook,
 # a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Resolution order:
 #   1. --webhook-id <id>                       use verbatim
-#   2. an existing webhook named --webhook-name (default "AldoTel Alerts")
+#   2. an existing webhook named --webhook-name (default "ClickStack Alerts")
 #   3. if --webhook-url is given, CREATE one    (needs HDX_EMAIL/HDX_PASS; webhook create is only on
 #                                                the cookie-authed POST /webhooks route)
 #
@@ -32,7 +32,7 @@
 set -euo pipefail
 
 DRY_RUN=0; DELETE=0; ONLY=""
-WEBHOOK_ID=""; WEBHOOK_NAME="AldoTel Alerts"; WEBHOOK_URL=""; WEBHOOK_SERVICE="generic"
+WEBHOOK_ID=""; WEBHOOK_NAME="ClickStack Alerts"; WEBHOOK_URL=""; WEBHOOK_SERVICE="generic"
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run)          DRY_RUN=1 ;;

@@ -1,4 +1,4 @@
-# AldoTel Observability Dashboard Templates
+# ClickStack Observability Dashboard Templates
 
 Download-and-go observability dashboards for teams running **Open Source ClickStack**
 (HyperDX + ClickHouse + OpenTelemetry). This repo ships **two complementary deliverables**
@@ -6,16 +6,12 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 
 | Deliverable | Use it for | Start here |
 |-------------|-----------|------------|
-| 🔎 **[HyperDX](hyperdx/)** | Deep, interactive **investigation** — per-domain dashboards, drill-downs, log/trace search, data-science tiles | [`hyperdx/README.md`](hyperdx/README.md) |
+| 🔎 **[HyperDX](hyperdx/)** | Deep, interactive **investigation** — per-domain dashboards, drill-downs, log/trace search, advanced SQL / anomaly-detection tiles | [`hyperdx/README.md`](hyperdx/README.md) |
 | 📊 **[Grafana](grafana/)** | At-a-glance **health**, executive views, and **alerting** (generic webhook) | [`grafana/README.md`](grafana/README.md) |
 
 > **Which do I use?** Use **HyperDX to investigate** (rich, click-through, log/trace correlation)
 > and **Grafana to watch & page** (high-level golden-signal boards + provisioned alert rules).
 > They read the same data, so you can run either or both.
-
-> **"AldoTel" vs "ClickStack":** *AldoTel* is the author/brand of these templates; *ClickStack*
-> is the open-source observability platform (HyperDX + ClickHouse + OpenTelemetry) they run on.
-> You don't need anything called "AldoTel" installed — any ClickStack / HyperDX deployment works.
 
 > **Status:** current release `1.0.0-rc1` (see [`VERSION`](VERSION)). The `main` branch may
 > include unreleased changes, listed under *Unreleased* in [`CHANGELOG.md`](CHANGELOG.md).
@@ -61,6 +57,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── validate.js               Validates panel SQL against live ClickHouse
 │   └── docker-compose.yml        Throwaway Grafana for authoring/preview
 │
+├── CONTRIBUTING.md              Maintainer guide (generators, validation, dev harness)
 ├── CHANGELOG.md · VERSION
 └── README.md                   ← you are here
 ```

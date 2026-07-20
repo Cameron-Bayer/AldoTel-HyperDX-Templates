@@ -4,7 +4,7 @@
   "dashboard": "slo-errorbudget",
   "tile": "Error rate (1 - SLI)",
   "alert": {
-    "name": "AldoTel · SLO fast burn (14.4x)",
+    "name": "ClickStack · SLO fast burn (14.4x)",
     "source": "tile",
     "thresholdType": "above",
     "threshold": 0.0144,

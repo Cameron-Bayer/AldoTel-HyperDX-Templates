@@ -14,7 +14,7 @@
   (or `slack` / `incidentio`) service — point it at your own on-call channel (a Slack incoming webhook,
   a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint). Resolution order:
     1. -WebhookId <id>                              (use this webhook verbatim)
-    2. an existing webhook named -WebhookName        (default "AldoTel Alerts")
+    2. an existing webhook named -WebhookName        (default "ClickStack Alerts")
     3. if -WebhookUrl is given, CREATE one           (needs HDX_EMAIL/HDX_PASS; see note below)
   Webhook CREATE is only exposed on the cookie-authed root route (POST /webhooks), so creating a
   webhook requires an interactive login (HDX_EMAIL/HDX_PASS), and HDX_APP_URL if the HyperDX UI is on
@@ -24,7 +24,7 @@
 .PARAMETER Delete     Delete the template-managed alerts (matched by name) instead of importing.
 .PARAMETER Only       Comma-separated alert file names (e.g. "error-rate.json,replication-lag.json").
 .PARAMETER WebhookId    Use this webhook id verbatim (skips lookup/creation).
-.PARAMETER WebhookName  Name of the webhook to look up / create. Default "AldoTel Alerts".
+.PARAMETER WebhookName  Name of the webhook to look up / create. Default "ClickStack Alerts".
 .PARAMETER WebhookUrl   If set and no webhook is found, create a `generic` webhook with this URL
                         (your on-call channel's webhook URL). Requires HDX_EMAIL / HDX_PASS.
 .PARAMETER WebhookService  Webhook service when creating: generic (default), slack, incidentio.
@@ -44,7 +44,7 @@ param(
   [switch]$Delete,
   [string]$Only,
   [string]$WebhookId,
-  [string]$WebhookName = "AldoTel Alerts",
+  [string]$WebhookName = "ClickStack Alerts",
   [string]$WebhookUrl,
   [ValidateSet("generic", "slack", "incidentio")]
   [string]$WebhookService = "generic"

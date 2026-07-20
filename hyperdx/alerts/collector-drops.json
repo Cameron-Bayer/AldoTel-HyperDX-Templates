@@ -4,7 +4,7 @@
   "dashboard": "collector-health",
   "tile": "Refused spans (should be 0)",
   "alert": {
-    "name": "AldoTel · Collector refusing spans",
+    "name": "ClickStack · Collector refusing spans",
     "source": "tile",
     "thresholdType": "above",
     "threshold": 0,
