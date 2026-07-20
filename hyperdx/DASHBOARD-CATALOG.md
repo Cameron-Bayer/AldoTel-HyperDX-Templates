@@ -417,7 +417,10 @@ Empty tiles almost always mean **the data isn't flowing yet**, not that the dash
 4. **Check metric names** — if `preflight` says a required metric is missing but you *are* scraping it,
    your exporter may use a different name. Adjust `metricName` in the tile and `requirements.json`.
 5. **`clickhouse-keeper-replication` replication empty?** — expected on single-node ClickHouse (see that section).
-6. **Collector dropping data?** — check `collector-health`: refused/failed spans or a full exporter
+6. **`clickhouse-storage-mergetree` / `clickhouse-queryperf` empty?** — these are Raw SQL dashboards that
+   read `system.*` tables. Verify the HyperDX ClickHouse user can `SELECT` from `system.parts`,
+   `system.part_log`, and/or `system.query_log` (preflight only checks OTel telemetry, not this access).
+7. **Collector dropping data?** — check `collector-health`: refused/failed spans or a full exporter
    queue means telemetry is lost before it lands, which starves every other dashboard.
 
 ---

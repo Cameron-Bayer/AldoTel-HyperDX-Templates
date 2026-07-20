@@ -27,6 +27,18 @@ so the data source, dashboards, and alerts all come back automatically on every 
   `clickhouse` data source uses it) — the provisioned `clickstack-ch` data source reuses it,
   so **you don't pass a password**.
 
+## Wire up notifications (do this first)
+
+The shipped `../alerting/contact-points.yaml` has a **placeholder webhook URL** — rules
+evaluate and fire, but nothing is delivered until you set a real one. Edit it **before**
+you run the installer so Grafana only restarts once:
+
+1. Edit the `url` in [`../alerting/contact-points.yaml`](../alerting/contact-points.yaml)
+   (Slack/Teams/PagerDuty/Discord/any HTTP endpoint).
+2. Then run `./install-k8s.ps1` (below) — it applies the alerting ConfigMap and restarts Grafana.
+
+(Not deploying alerts? Skip this and pass `-SkipAlerts`.)
+
 ## Usage
 
 ```powershell
@@ -65,15 +77,6 @@ curl -s -u <admin>:<pass> "http://localhost:3010/api/search?type=dash-db"
 # alert-rule health — expect health=ok for every rule
 curl -s -u <admin>:<pass> http://localhost:3010/api/prometheus/grafana/api/v1/rules
 ```
-
-## Wire up notifications
-
-The shipped `../alerting/contact-points.yaml` has a **placeholder webhook URL** — rules
-evaluate and fire, but nothing is delivered until you set a real one:
-
-1. Edit the `url` in [`../alerting/contact-points.yaml`](../alerting/contact-points.yaml)
-   (Slack/Teams/PagerDuty/Discord/any HTTP endpoint).
-2. Re-run `./install-k8s.ps1` (or `kubectl apply` the alerting ConfigMap and restart Grafana).
 
 ## Not on Kubernetes?
 

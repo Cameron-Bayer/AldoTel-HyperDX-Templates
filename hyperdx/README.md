@@ -6,18 +6,36 @@ enable only what they run.
 
 ## Import in ~5 minutes
 
+**PowerShell (Windows):**
+
+```powershell
+# 1. Get the templates
+git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
+cd AldoTel-HyperDX-Templates/hyperdx
+
+# 2. Point at your HyperDX API (Team Settings → API Keys → Personal API Access Key)
+$env:HDX_API_URL = "http://localhost:8000"
+$env:HDX_API_KEY = "<your Personal API Access Key>"
+
+# 3. Check what has data, then import
+./preflight.ps1       # rates each dashboard OK/DEGRADED/FAIL
+./import.ps1          # upserts all dashboards (idempotent)
+```
+
+**bash (macOS / Linux):**
+
 ```bash
 # 1. Get the templates
 git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
 cd AldoTel-HyperDX-Templates/hyperdx
 
 # 2. Point at your HyperDX API (Team Settings → API Keys → Personal API Access Key)
-export HDX_API_URL="http://localhost:8000"     # PowerShell: $env:HDX_API_URL = "..."
+export HDX_API_URL="http://localhost:8000"
 export HDX_API_KEY="<your Personal API Access Key>"
 
 # 3. Check what has data, then import
-./preflight.sh        # ./preflight.ps1 on Windows — rates each dashboard OK/DEGRADED/FAIL
-./import.sh           # ./import.ps1 on Windows — upserts all dashboards (idempotent)
+./preflight.sh        # rates each dashboard OK/DEGRADED/FAIL
+./import.sh           # upserts all dashboards (idempotent)
 ```
 
 Prefer a subset? `./import.sh --only services-red.json,logs-overview.json`. Full details,
@@ -243,7 +261,7 @@ and a portable **datasource variable**, so on import you just pick your ClickHou
 - **Logs & Errors Overview** — volume by severity, error rate, and recent errors from `otel_logs`.
 
 The service/Kubernetes/logs boards include **Service / Namespace filter dropdowns**. See
-[`../grafana/README.md`](../grafana/README.md) for import steps and a local preview harness.
+[`../grafana/README.md`](../grafana/README.md) for customer quick-start and import steps.
 
 **Grafana alerts:** the [`../grafana/alerting/`](../grafana/alerting/README.md) folder adds six
 provisioned Grafana unified-alerting rules over the same ClickHouse data (service error

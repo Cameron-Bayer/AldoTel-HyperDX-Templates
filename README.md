@@ -48,7 +48,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   └── requirements.json         Machine-readable support matrix (drives preflight)
 │
 ├── grafana/                    📊 Grafana deliverable
-│   ├── README.md                 Section guide: import + local preview harness
+│   ├── README.md                 Section guide: customer import + quick-start
 │   ├── dashboards/               4 dashboard templates (*.json)
 │   ├── alerting/                 Provisioned alert rules (YAML) + Terraform equivalent
 │   ├── provisioning/             Dev-harness datasource + dashboard providers
@@ -85,7 +85,7 @@ cd AldoTel-HyperDX-Templates/hyperdx
 Four high-level Grafana dashboards over the same ClickHouse data, plus a **provisioned
 alerting pack** (YAML **and** Terraform) that notifies your on-call channel via a webhook.
 
-- **Get started:** [`grafana/README.md`](grafana/README.md) — customer quick-start, import steps, and a local preview harness.
+- **Get started:** [`grafana/README.md`](grafana/README.md) — customer quick-start and import steps.
 - **Alerts:** [`grafana/alerting/README.md`](grafana/alerting/README.md) — six unified-alerting rules, channel setup, and tunable thresholds.
 
 ---
