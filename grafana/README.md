@@ -103,6 +103,30 @@ you want Grafana to *page you*, not just visualize.
 
 ---
 
+## Will these light up? (data each dashboard needs)
+
+Every dashboard reads only ClickStack's default OTel schema, but a panel is only as full as
+the telemetry you actually send. Use this to predict what will have data before you import:
+
+| Dashboard | Needs | Stays empty if… |
+|-----------|-------|-----------------|
+| **Executive Summary** | any of the signals below | nothing is flowing into ClickStack yet |
+| **Service Health (Golden Signals)** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
+| **Kubernetes Cluster Overview** | `otel_metrics_gauge` from the OTel **k8s cluster receiver** + **kubelet stats receiver** (ClickStack's infra collectors ship these) | those receivers aren't enabled or scraping |
+| **Logs & Errors Overview** | log rows in `otel_logs` (container logs and/or app OTLP logs) | no log pipeline is wired up |
+
+**Empty dashboard? quick checks**
+
+1. **Is data flowing?** Confirm the dashboard's source table has recent rows — e.g. in HyperDX
+   Search, or `SELECT count() FROM otel_traces WHERE Timestamp > now() - INTERVAL 15 MINUTE`.
+2. **Right database?** These dashboards default to the `default` database via the hidden
+   `database` variable — if your ClickStack uses another, set it (Dashboard settings → Variables).
+3. **Widen the time range** — the default window is recent; stretch it if your data is sparse.
+4. **Kubernetes panels empty specifically?** Verify the **k8s cluster** and **kubelet stats**
+   receivers are enabled and scraping — those metrics don't exist without them.
+
+---
+
 ## Architecture — how it fits together
 
 **Collect once, use everywhere.** Your applications and Kubernetes cluster emit standard

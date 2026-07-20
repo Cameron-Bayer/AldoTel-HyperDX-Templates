@@ -132,10 +132,10 @@ the dev ClickHouse (datasource UID `clickstack-ch`). Verify after
 
 ```powershell
 # list loaded rules
-curl -u admin:admin http://localhost:3005/api/v1/provisioning/alert-rules
+curl.exe -u admin:admin http://localhost:3005/api/v1/provisioning/alert-rules
 
 # evaluation state / health of every rule
-curl -u admin:admin http://localhost:3005/api/prometheus/grafana/api/v1/rules
+curl.exe -u admin:admin http://localhost:3005/api/prometheus/grafana/api/v1/rules
 ```
 
 `health=ok` means the ClickHouse query ran. `state` moves

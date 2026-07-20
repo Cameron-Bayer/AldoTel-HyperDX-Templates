@@ -109,3 +109,9 @@ needs only the API key.
   }
 }
 ```
+
+> **`dashboard` is a stable slug, not a filename.** It matches the target dashboard's
+> `tmpl:<slug>` tag, which is deliberately short and can differ from the JSON filename —
+> e.g. the alert targeting `dashboards/clickhouse-storage-mergetree.json` uses
+> `"dashboard": "ch-storage"` (tag `tmpl:ch-storage`). The importer resolves the slug to the
+> installed dashboard's real ID at import time, so the tag is what keeps upserts stable.

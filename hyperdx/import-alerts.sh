@@ -111,8 +111,9 @@ EOF
 DASHBOARDS="$(api "$BASE_URL/api/v2/dashboards" | jq -c '.data // .')"
 EXISTING_ALERTS="$(api "$BASE_URL/api/v2/alerts" | jq -c '.data // .')"
 
-# --- select files ---
-mapfile -t FILES < <(ls "$ALERT_DIR"/*.json 2>/dev/null)
+# --- select files --- (portable read loop; stock macOS Bash 3.2 lacks `mapfile`)
+FILES=()
+while IFS= read -r line; do FILES+=("$line"); done < <(ls "$ALERT_DIR"/*.json 2>/dev/null)
 if [ -n "$ONLY" ]; then
   IFS=',' read -ra WANT <<< "$ONLY"
   SEL=(); for f in "${FILES[@]}"; do b="$(basename "$f")"; for w in "${WANT[@]}"; do [ "$b" = "$(echo "$w" | xargs)" ] && SEL+=("$f"); done; done

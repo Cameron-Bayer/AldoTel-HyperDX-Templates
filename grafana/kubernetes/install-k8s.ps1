@@ -151,14 +151,16 @@ Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 Write-Host ""
 Write-Step "Done."
 Write-Host @"
-Verify (port-forward Grafana, then hit the API):
+Verify (port-forward Grafana, then hit the API from PowerShell):
     kubectl port-forward -n $Namespace svc/$Deployment 3010:3000
+    `$cred = Get-Credential   # Grafana admin user + password
+    `$g = 'http://localhost:3010'
     # data sources — expect 'clickhouse' and '$DatasourceUid'
-    curl -s -u <admin>:<pass> http://localhost:3010/api/datasources
+    Invoke-RestMethod -Credential `$cred "`$g/api/datasources" | Select-Object name, type
     # dashboards
-    curl -s -u <admin>:<pass> http://localhost:3010/api/search?type=dash-db
+    Invoke-RestMethod -Credential `$cred "`$g/api/search?type=dash-db" | Select-Object title, uid
     # alert-rule health — expect health=ok for all rules
-    curl -s -u <admin>:<pass> http://localhost:3010/api/prometheus/grafana/api/v1/rules
+    Invoke-RestMethod -Credential `$cred "`$g/api/prometheus/grafana/api/v1/rules"
 
 Notification channel: edit the webhook URL in ../alerting/contact-points.yaml, re-run
 this script (or kubectl apply the alerting ConfigMap), and restart Grafana.

@@ -92,11 +92,27 @@ No webhook named '$WebhookName' exists. Either:
 
   if ($DryRun) { Write-Host "[DRY RUN] would create webhook '$WebhookName' ($WebhookService) -> $WebhookUrl" -ForegroundColor Yellow; return "{{DRYRUN_WEBHOOK_ID}}" }
 
-  $login = Invoke-WebRequest -Uri "$appUrl/api/login/password" -Method Post `
-             -Headers @{ 'X-Forwarded-Proto' = 'https' } `
-             -Body @{ email = $email; password = $pass } `
-             -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue
-  $setCookie = @($login.Headers['Set-Cookie']) -join ' ;; '
+  # Log in for a session cookie. `-SkipHttpErrorCheck` only exists on PowerShell 7+, and
+  # Windows PowerShell 5.1 throws on the login's 302 redirect — handle both so webhook
+  # creation works on either.
+  $iwrArgs = @{
+    Uri                = "$appUrl/api/login/password"
+    Method             = 'Post'
+    Headers            = @{ 'X-Forwarded-Proto' = 'https' }
+    Body               = @{ email = $email; password = $pass }
+    MaximumRedirection = 0
+    ErrorAction        = 'SilentlyContinue'
+  }
+  if ($PSVersionTable.PSVersion.Major -ge 6) { $iwrArgs['SkipHttpErrorCheck'] = $true }
+  $setCookie = ''
+  try {
+    $login = Invoke-WebRequest @iwrArgs
+    $setCookie = @($login.Headers['Set-Cookie']) -join ' ;; '
+  } catch {
+    # PS 5.1: recover the response from the redirect exception to read Set-Cookie.
+    $resp = $_.Exception.Response
+    if ($resp) { $setCookie = @($resp.Headers['Set-Cookie']) -join ' ;; ' }
+  }
   if ($setCookie -notmatch 'connect\.sid=([^;]+)') { throw "Login to $appUrl failed (no session cookie). Check HDX_EMAIL/HDX_PASS and HDX_APP_URL." }
   $sid = $Matches[1]
 

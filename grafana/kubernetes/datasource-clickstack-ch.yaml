@@ -2,15 +2,15 @@
 #
 # This is the data source the alert rules in ../alerting/ reference by the fixed
 # UID `clickstack-ch` (provisioned alert rules can't prompt for a data source).
-# install-k8s.ps1 loads this file as an extra key in the Grafana datasources
-# provisioning ConfigMap so it survives pod restarts.
+# install-k8s.ps1 / install-k8s.sh load this file as an extra key in the Grafana
+# datasources provisioning ConfigMap so it survives pod restarts.
 #
 # The password is read from the CH_PASSWORD environment variable that the
 # ClickStack Grafana deployment already injects (the same one its built-in
 # `clickhouse` data source uses) — no secret handling required.
 #
 # If your ClickHouse is reachable at a different host/port, edit `server`/`port`
-# below (or pass -ChServer / -ChPort to install-k8s.ps1).
+# below (or pass -ChServer / -ChPort, or --ch-server / --ch-port, to the installer).
 apiVersion: 1
 datasources:
   - name: ClickStack ClickHouse

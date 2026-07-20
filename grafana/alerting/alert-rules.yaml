@@ -1,9 +1,10 @@
 # ClickStack Grafana alerts — alert rules
 # ============================================================================
 # Six high-signal alert rules that query the SAME ClickHouse tables ClickStack
-# writes (otel_traces / otel_logs / otel_metrics_gauge). They mirror the signal
-# set of the HyperDX alerts pack (../../alerts) but evaluate natively in Grafana
-# so notifications, silences and on-call routing all live in one place.
+# writes (otel_traces / otel_logs / otel_metrics_gauge). They complement the
+# HyperDX alerts pack (../../hyperdx/alerts) — covering a different signal set —
+# and evaluate natively in Grafana so notifications, silences and on-call
+# routing all live in one place.
 #
 # ----------------------------------------------------------------------------
 # DATASOURCE UID  (important for portability)

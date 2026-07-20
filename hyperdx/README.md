@@ -49,6 +49,9 @@ flags, and prerequisites are in [Install](#install) below.
 > 🔍 **Want to go deeper?** The [Dashboard Deep-Dive](DASHBOARD-DEEP-DIVE.md) walks through every
 > dashboard tile-by-tile in a Q&A format — what each visual shows, how to read it, and what to do
 > when it lights up.
+>
+> 📄 **Per-dashboard reference pages** (auto-generated, optional) live in [`docs/`](docs/) — one page
+> per dashboard with a screenshot and every tile's query. Handy for lookups; not needed to install.
 
 | File | What it shows | Source kind |
 |------|---------------|-------------|

@@ -9,8 +9,9 @@ an **ephemeral SQLite database** — there is no PersistentVolume on `/var/lib/g
 > **file-based provisioning** survives, and on this chart that provisioning is fed by
 > **ConfigMaps**.
 
-`install-k8s.ps1` does the durable thing: it patches the Grafana provisioning ConfigMaps
-so the data source, dashboards, and alerts all come back automatically on every restart.
+Two equivalent installers do the durable thing — `install-k8s.ps1` (PowerShell) and
+`install-k8s.sh` (bash) — patching the Grafana provisioning ConfigMaps so the data source,
+dashboards, and alerts all come back automatically on every restart.
 
 ## What it installs
 
@@ -23,6 +24,7 @@ so the data source, dashboards, and alerts all come back automatically on every 
 ## Prerequisites
 
 - `kubectl` pointed at the cluster running ClickStack.
+- For `install-k8s.sh` (bash): `jq` on your PATH. (`install-k8s.ps1` needs no extra tools.)
 - The ClickStack Grafana Deployment already injects a `CH_PASSWORD` env var (its built-in
   `clickhouse` data source uses it) — the provisioned `clickstack-ch` data source reuses it,
   so **you don't pass a password**.
@@ -35,11 +37,13 @@ you run the installer so Grafana only restarts once:
 
 1. Edit the `url` in [`../alerting/contact-points.yaml`](../alerting/contact-points.yaml)
    (Slack/Teams/PagerDuty/Discord/any HTTP endpoint).
-2. Then run `./install-k8s.ps1` (below) — it applies the alerting ConfigMap and restarts Grafana.
+2. Then run the installer (below) — it applies the alerting ConfigMap and restarts Grafana.
 
-(Not deploying alerts? Skip this and pass `-SkipAlerts`.)
+(Not deploying alerts? Skip this and pass `-SkipAlerts` / `--skip-alerts`.)
 
 ## Usage
+
+**PowerShell (Windows):**
 
 ```powershell
 # From the repo, in grafana/kubernetes/
@@ -52,7 +56,23 @@ you run the installer so Grafana only restarts once:
 ./install-k8s.ps1 -ChServer my-clickhouse-headless -ChPort 9000
 ```
 
-Key parameters (all optional, defaults match the stock ClickStack chart):
+**bash (macOS / Linux, needs `jq`):**
+
+```bash
+# From the repo, in grafana/kubernetes/
+chmod +x install-k8s.sh   # first time only
+./install-k8s.sh
+
+# Different namespace, data source + dashboards only (no alerts):
+./install-k8s.sh --namespace obs --skip-alerts
+
+# Non-default ClickHouse endpoint:
+./install-k8s.sh --ch-server my-clickhouse-headless --ch-port 9000
+```
+
+Key parameters (all optional, defaults match the stock ClickStack chart). PowerShell
+flags are shown; the bash equivalents are the lowercase `--kebab-case` forms
+(`-Namespace` → `--namespace`, `-SkipAlerts` → `--skip-alerts`, etc.):
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
@@ -70,13 +90,21 @@ it any time (e.g. after editing a dashboard or the webhook URL).
 
 ```powershell
 kubectl port-forward -n clickstack svc/clickstack-grafana 3010:3000
+
+# authenticate once (enter the Grafana admin user + password when prompted)
+$cred = Get-Credential
+$g = 'http://localhost:3010'
+
 # data sources — expect 'clickhouse' + 'clickstack-ch'
-curl -s -u <admin>:<pass> http://localhost:3010/api/datasources
+Invoke-RestMethod -Credential $cred "$g/api/datasources" | Select-Object name, type
 # dashboards
-curl -s -u <admin>:<pass> "http://localhost:3010/api/search?type=dash-db"
+Invoke-RestMethod -Credential $cred "$g/api/search?type=dash-db" | Select-Object title, uid
 # alert-rule health — expect health=ok for every rule
-curl -s -u <admin>:<pass> http://localhost:3010/api/prometheus/grafana/api/v1/rules
+Invoke-RestMethod -Credential $cred "$g/api/prometheus/grafana/api/v1/rules"
 ```
+
+> On macOS/Linux (bash) use `curl` instead, e.g.
+> `curl -s -u admin:'<pass>' http://localhost:3010/api/datasources`.
 
 ## Not on Kubernetes?
 
