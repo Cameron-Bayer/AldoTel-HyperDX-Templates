@@ -5,7 +5,7 @@
 .DESCRIPTION
   For every metric/field each dashboard needs (see requirements.json), runs a lightweight
   query via the HyperDX v2 charts API and reports whether the OTel telemetry each dashboard
-  reads is actually flowing. NOTE: this checks OTel data presence only — it does NOT verify
+  reads is actually flowing. NOTE: this checks OTel data presence only - it does NOT verify
   ClickHouse Raw SQL access (system.parts / system.part_log / system.query_log) that the
   SQL-based dashboards (clickhouse-storage-mergetree, clickhouse-queryperf) additionally require.
 
@@ -56,7 +56,7 @@ function Test-Check($check) {
   $isMetric = ($check.kind -eq 'metric')
   if ($isMetric) {
     # 'count' is not a valid aggregation for metric series (returns no datapoints), and a gauge
-    # can legitimately read 0 while still flowing — so use avg and test for *presence* of any
+    # can legitimately read 0 while still flowing - so use avg and test for *presence* of any
     # datapoint rather than a non-zero sum. Histogram metrics reject avg/sum, so verify them with
     # count (which the charts API does support for the histogram data type).
     $series.aggFn          = if ($check.metricType -eq 'histogram') { 'count' } else { 'avg' }
@@ -121,7 +121,7 @@ if ($recommend.Count -gt 0) {
   $recommend | ForEach-Object { Write-Host "   $_" }
   Write-Host ""
   Write-Host "Note: Raw-SQL dashboards also need the HyperDX ClickHouse user to have SELECT on the"
-  Write-Host "      relevant system.* tables (not checked here) — see requirements.json 'receivers'."
+  Write-Host "      relevant system.* tables (not checked here) - see requirements.json 'receivers'."
   Write-Host ""
   Write-Host "Then run: ./import.ps1 -Only $($recommend -join ',')"
 } else {
