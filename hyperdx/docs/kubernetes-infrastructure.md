@@ -5,7 +5,7 @@
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
 - **Template:** `dashboards/kubernetes-infrastructure.json` · tag `tmpl:k8s-infrastructure`
-- **Data required:** kubeletstats receiver; k8s_cluster receiver
+- **Data required:** kubeletstats receiver; k8s_cluster receiver; k8sobjects receiver (events.k8s.io) for the cluster-events tiles
 
 ## Preview
 
@@ -395,6 +395,152 @@ SELECT ns AS "Namespace", pod AS "Pod", toUInt64(restarts) AS "Restarts" FROM (
 WHERE restarts > 0
 ORDER BY restarts DESC
 LIMIT 50
+```
+
+</details>
+
+## Container utilization
+Per-container usage as a fraction of its configured CPU/memory **limit** and **request** (`k8s.container.*_utilization` from kubeletstats). Sustained values near 100% of limit risk throttling/OOM.
+
+### Container CPU vs limit % — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+       concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container,
+       avg(Value) AS "CPU vs limit"
+FROM default.otel_metrics_gauge
+WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.container.cpu_limit_utilization' AND $__filters
+GROUP BY ts, container
+ORDER BY ts
+```
+
+</details>
+
+### Container memory vs limit % — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+       concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container,
+       avg(Value) AS "Mem vs limit"
+FROM default.otel_metrics_gauge
+WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'k8s.container.memory_limit_utilization' AND $__filters
+GROUP BY ts, container
+ORDER BY ts
+```
+
+</details>
+
+### Containers — utilization vs limit / request — table · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+WITH g AS (
+  SELECT ResourceAttributes['k8s.namespace.name'] AS ns,
+    ResourceAttributes['k8s.pod.name'] AS pod,
+    ResourceAttributes['k8s.container.name'] AS container,
+    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_limit_utilization') AS cpu_lim,
+    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_request_utilization') AS cpu_req,
+    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_limit_utilization') AS mem_lim,
+    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_request_utilization') AS mem_req
+  FROM default.otel_metrics_gauge
+  WHERE TimeUnix > now() - INTERVAL 1 HOUR
+    AND MetricName IN ('k8s.container.cpu_limit_utilization', 'k8s.container.cpu_request_utilization', 'k8s.container.memory_limit_utilization', 'k8s.container.memory_request_utilization')
+    AND $__filters
+  GROUP BY ns, pod, container
+),
+u AS (
+  SELECT ResourceAttributes['k8s.namespace.name'] AS ns, ResourceAttributes['k8s.pod.name'] AS pod,
+    ResourceAttributes['k8s.container.name'] AS container, argMax(Value, TimeUnix) AS uptime
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'container.uptime'
+  GROUP BY ns, pod, container
+)
+SELECT g.ns AS Namespace, g.pod AS Pod, g.container AS Container,
+  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 1)), '%')) AS "CPU/limit",
+  if(isNaN(g.cpu_req), '-', concat(toString(round(g.cpu_req * 100, 1)), '%')) AS "CPU/request",
+  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 1)), '%')) AS "Mem/limit",
+  if(isNaN(g.mem_req), '-', concat(toString(round(g.mem_req * 100, 1)), '%')) AS "Mem/request",
+  if(u.uptime > 0, formatReadableTimeDelta(toUInt64(u.uptime)), '-') AS Uptime
+FROM g LEFT JOIN u USING (ns, pod, container)
+ORDER BY g.cpu_lim DESC
+LIMIT 100
+```
+
+</details>
+
+## Cluster events
+Kubernetes events collected by the k8sobjects receiver (`events.k8s.io`), stored as logs. Cluster-wide (not scoped by the Namespace filter above).
+
+### Warning events (in range) — number · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(JSONExtractString(Body, 'object', 'type') = 'Warning') AS "Warning events"
+FROM default.otel_logs
+WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND ScopeName LIKE '%k8sobjectsreceiver%'
+```
+
+</details>
+
+### Top event reasons — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT JSONExtractString(Body, 'object', 'reason') AS "Reason",
+  JSONExtractString(Body, 'object', 'type') AS "Type",
+  count() AS "Count"
+FROM default.otel_logs
+WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND ScopeName LIKE '%k8sobjectsreceiver%'
+GROUP BY Reason, Type
+ORDER BY Count DESC
+LIMIT 50
+```
+
+</details>
+
+### Recent events — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT Timestamp AS "Time",
+  JSONExtractString(Body, 'object', 'type') AS "Type",
+  JSONExtractString(Body, 'object', 'reason') AS "Reason",
+  concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), ' ', JSONExtractString(Body, 'object', 'regarding', 'namespace'), '/', JSONExtractString(Body, 'object', 'regarding', 'name')) AS "Object",
+  substring(JSONExtractString(Body, 'object', 'note'), 1, 160) AS "Message"
+FROM default.otel_logs
+WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND ScopeName LIKE '%k8sobjectsreceiver%'
+ORDER BY Timestamp DESC
+LIMIT 200
 ```
 
 </details>

@@ -7,8 +7,20 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ### Added
 
-- **Grafana deliverable (`grafana/`)** — four dashboards (Executive Summary, Service Health /
-  golden signals, Kubernetes Cluster Overview, Logs & Errors Overview) over the same ClickHouse
+- **Four new coverage areas across both platforms — Host/OS, Kubernetes events, container-level
+  utilization, and latency histograms.** HyperDX gains two dashboards — **Host / OS Metrics**
+  (`host-os`: CPU busy %, load, memory/swap, disk & network I/O per host from the `hostmetrics`
+  receiver) and **Latency Histograms** (`metrics-histograms`: p50/p95/p99/avg for HTTP server/client
+  + RPC server and ClickHouse Keeper, interpolated from OTLP explicit-bucket histograms) — and the
+  **Kubernetes — Infrastructure** dashboard is extended with a *container utilization vs limits* row
+  (`k8s.container.{cpu,memory}_limit_utilization`, `container.uptime`) and a *cluster events* row
+  (Warnings, top reasons, live stream from the `k8sobjects` receiver). Grafana gains matching
+  higher-level **Host / OS Metrics** and **Latency Histograms** summary dashboards and the same
+  container-utilization + events rows on the Kubernetes Cluster Overview. `requirements.json`,
+  `preflight` (histograms verified with `aggFn=count`), and all customer docs updated to match.
+- **Grafana deliverable (`grafana/`)** — six dashboards (Executive Summary, Service Health /
+  golden signals, Kubernetes Cluster Overview, Logs & Errors Overview, Host / OS Metrics, Latency
+  Histograms) over the same ClickHouse
   data, plus a **provisioned alerting pack** (`grafana/alerting/`) of ten unified-alerting rules
   (generic webhook by default) shipped as YAML **and** Terraform. Portable via a datasource variable,
   with a durable ConfigMap installer for ClickStack-on-Kubernetes (`grafana/kubernetes/`).
@@ -41,7 +53,8 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   dashboards stay in [`hyperdx/dashboards/`](hyperdx/dashboards/); three ClickHouse deep-dives
   (`clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication`) moved
   to `hyperdx/dashboards/advanced/`. The import scripts and `gen-docs.js` recurse into `advanced/`,
-  so `./import.ps1` still installs all nine.
+  so `./import.ps1` still installs everything. (The HyperDX pack later grew to 11 with the Host / OS
+  and Latency Histogram dashboards above.)
 - **`slo-errorbudget` folded into `services-red`.** The standalone SLO dashboard was removed; its
   Availability (SLI), error-budget-remaining, and multi-window burn-rate (1h/6h/24h/3d) now live as
   a compact **SLO strip** at the bottom of Services — RED.

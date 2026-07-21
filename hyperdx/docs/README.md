@@ -12,6 +12,8 @@ Detailed table/column breakdown for each dashboard visual.
 | ClickStack · ClickHouse — Operations | [clickhouse-health.md](clickhouse-health.md) |
 | ClickStack · OTel Collector — Pipeline Health | [collector-health.md](collector-health.md) |
 | ClickStack · Executive Overview | [executive-overview.md](executive-overview.md) |
+| ClickStack · Host / OS Metrics | [host-os.md](host-os.md) |
 | ClickStack · Kubernetes — Infrastructure | [kubernetes-infrastructure.md](kubernetes-infrastructure.md) |
 | ClickStack · Logs — Overview | [logs-overview.md](logs-overview.md) |
+| ClickStack · Latency Histograms | [metrics-histograms.md](metrics-histograms.md) |
 | ClickStack · Services — RED (Rate / Errors / Duration) | [services-red.md](services-red.md) |

@@ -95,7 +95,8 @@
       "name": "Kubernetes — Infrastructure",
       "receivers": [
         "kubeletstats receiver",
-        "k8s_cluster receiver"
+        "k8s_cluster receiver",
+        "k8sobjects receiver (events.k8s.io) for the cluster-events tiles"
       ],
       "checks": [
         {
@@ -193,6 +194,30 @@
           "required": false,
           "metricType": "sum",
           "metricName": "k8s.node.uptime"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.cpu_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.memory_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "container.uptime"
+        },
+        {
+          "kind": "log",
+          "required": false,
+          "label": "cluster events (k8sobjects)",
+          "where": "ScopeName:*k8sobjectsreceiver*"
         }
       ]
     },
@@ -420,6 +445,87 @@
           "required": false,
           "metricType": "sum",
           "metricName": "otelcol_receiver_accepted_spans_total"
+        }
+      ]
+    },
+    {
+      "file": "host-os.json",
+      "tmpl": "tmpl:host-os",
+      "name": "Host / OS Metrics",
+      "receivers": [
+        "hostmetrics receiver (system.* scrapers: cpu, memory, load, disk, network, paging)"
+      ],
+      "checks": [
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "system.cpu.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "system.memory.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.cpu.load_average.1m"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.swap.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.disk.io"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.network.io"
+        }
+      ]
+    },
+    {
+      "file": "metrics-histograms.json",
+      "tmpl": "tmpl:metrics-histograms",
+      "name": "Latency Histograms",
+      "receivers": [
+        "Application OTLP explicit-bucket histogram metrics (http.*.duration / rpc.*.duration)",
+        "ClickHouse Keeper histogram metrics (ClickHouseHistogramMetrics_keeper_*) for the Keeper latency tile"
+      ],
+      "checks": [
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "histogram",
+          "metricName": "http.server.duration"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "histogram",
+          "metricName": "http.client.duration"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "histogram",
+          "metricName": "rpc.server.duration"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "histogram",
+          "metricName": "ClickHouseHistogramMetrics_keeper_response_time_ms"
         }
       ]
     }

@@ -57,8 +57,9 @@ function Test-Check($check) {
   if ($isMetric) {
     # 'count' is not a valid aggregation for metric series (returns no datapoints), and a gauge
     # can legitimately read 0 while still flowing — so use avg and test for *presence* of any
-    # datapoint rather than a non-zero sum.
-    $series.aggFn          = 'avg'
+    # datapoint rather than a non-zero sum. Histogram metrics reject avg/sum, so verify them with
+    # count (which the charts API does support for the histogram data type).
+    $series.aggFn          = if ($check.metricType -eq 'histogram') { 'count' } else { 'avg' }
     $series.metricName     = $check.metricName
     $series.metricDataType = $check.metricType
   } else {

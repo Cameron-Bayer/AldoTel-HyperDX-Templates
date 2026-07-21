@@ -372,10 +372,55 @@ function k8sOverview() {
         { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } },
     ] }]));
 
+  // --- Container utilization vs limits ------------------------------------
+  p.push(row('Container utilization vs limits', 29));
+  const cKey = `concat(${RA('k8s.namespace.name')}, '/', ${RA('k8s.pod.name')}, '/', ${RA('k8s.container.name')})`;
+  const topContainers = (metric) =>
+    `${cKey} IN (\n    SELECT ${cKey} AS ck FROM ${DB}.otel_metrics_gauge\n    WHERE MetricName = '${metric}' AND ${MF} ${NS}\n    GROUP BY ck ORDER BY avg(Value) DESC LIMIT 10)`;
+  p.push(timeseries('Top 10 containers by CPU vs limit (%)', { h: 8, w: 12, x: 0, y: 30 },
+    `SELECT ${MI} AS time, ${cKey} AS container, 100 * avg(Value) AS "cpu vs limit %"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.cpu_limit_utilization' AND ${MF} ${NS}\n  AND ${topContainers('k8s.container.cpu_limit_utilization')}\nGROUP BY time, container ORDER BY time`,
+    { unit: 'percent' }));
+  p.push(timeseries('Top 10 containers by memory vs limit (%)', { h: 8, w: 12, x: 12, y: 30 },
+    `SELECT ${MI} AS time, ${cKey} AS container, 100 * avg(Value) AS "mem vs limit %"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.memory_limit_utilization' AND ${MF} ${NS}\n  AND ${topContainers('k8s.container.memory_limit_utilization')}\nGROUP BY time, container ORDER BY time`,
+    { unit: 'percent' }));
+  // argMaxIf returns 0 (not null) for a container that never reports a limit-utilization
+  // series, so containers without limits show 0% rather than dropping out of the table.
+  p.push(table('Container utilization vs limits (latest)', { h: 9, w: 24, x: 0, y: 38 },
+    `SELECT ${RA('k8s.namespace.name')} AS "Namespace",\n       ${RA('k8s.pod.name')} AS "Pod",\n       ${RA('k8s.container.name')} AS "Container",\n       round(100 * argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_limit_utilization'), 1) AS "CPU vs limit %",\n       round(100 * argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_limit_utilization'), 1) AS "Mem vs limit %"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName IN ('k8s.container.cpu_limit_utilization', 'k8s.container.memory_limit_utilization') AND ${MF} ${NS}\nGROUP BY 1, 2, 3\nORDER BY "CPU vs limit %" DESC\nLIMIT 25`,
+    [
+      unitOverride('CPU vs limit %', 'percent', 1),
+      unitOverride('Mem vs limit %', 'percent', 1),
+    ]));
+
+  // --- Cluster events (k8sobjects receiver -> otel_logs) ------------------
+  // Event metadata lives in the event JSON Body (regarding.namespace, not a resource
+  // attribute), so these tiles are cluster-wide and intentionally ignore the namespace filter.
+  p.push(row('Cluster events (k8s events.k8s.io)', 47));
+  const EVT = `ScopeName LIKE '%k8sobjectsreceiver%' AND ${TF}`;
+  const EJ = (p2) => `JSONExtractString(Body, 'object', ${p2})`;
+  p.push(stat('Warning events (in range)', { h: 8, w: 6, x: 0, y: 48 },
+    `SELECT countIf(${EJ("'type'")} = 'Warning') AS value FROM ${DB}.otel_logs WHERE ${EVT}`,
+    { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 25 }] } }));
+  p.push(table('Top event reasons', { h: 8, w: 18, x: 6, y: 48 },
+    `SELECT ${EJ("'reason'")} AS "Reason",\n       ${EJ("'type'")} AS "Type",\n       ${EJ("'regarding', 'kind'")} AS "Object kind",\n       count() AS "Count"\nFROM ${DB}.otel_logs\nWHERE ${EVT}\nGROUP BY 1, 2, 3\nORDER BY "Count" DESC\nLIMIT 15`,
+    [{ matcher: { id: 'byName', options: 'Type' }, properties: [
+      { id: 'mappings', value: [{ type: 'value', options: { Warning: { color: 'red', index: 0 }, Normal: { color: 'green', index: 1 } } }] },
+      { id: 'custom.cellOptions', value: { type: 'color-text' } },
+    ] }]));
+  p.push(table('Recent events', { h: 10, w: 24, x: 0, y: 56 },
+    `SELECT Timestamp AS "Time",\n       ${EJ("'type'")} AS "Type",\n       ${EJ("'reason'")} AS "Reason",\n       concat(${EJ("'regarding', 'kind'")}, ' ', ${EJ("'regarding', 'namespace'")}, '/', ${EJ("'regarding', 'name'")}) AS "Object",\n       ${EJ("'note'")} AS "Message"\nFROM ${DB}.otel_logs\nWHERE ${EVT}\nORDER BY Timestamp DESC\nLIMIT 100`,
+    [
+      { matcher: { id: 'byName', options: 'Time' }, properties: [{ id: 'custom.width', value: 180 }] },
+      { matcher: { id: 'byName', options: 'Type' }, properties: [{ id: 'custom.width', value: 90 },
+        { id: 'mappings', value: [{ type: 'value', options: { Warning: { color: 'red', index: 0 }, Normal: { color: 'green', index: 1 } } }] },
+        { id: 'custom.cellOptions', value: { type: 'color-text' } }] },
+    ]));
+
   const nsVar = queryVar('namespace', 'Namespace',
     `SELECT DISTINCT ${RA('k8s.namespace.name')} FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF} ORDER BY 1`);
   return dashboard('clickstack-k8s-overview', 'ClickStack · Kubernetes Cluster Overview',
-    'Cluster and workload health from the OpenTelemetry k8s cluster/kubelet receivers (otel_metrics_gauge): nodes, pods, CPU/memory, restarts.', p, [nsVar]);
+    'Cluster and workload health from the OpenTelemetry k8s cluster/kubelet/k8sobjects receivers (otel_metrics_gauge + otel_logs): nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.', p, [nsVar]);
 }
 
 // ===========================================================================
@@ -556,10 +601,110 @@ function execSummary() {
     'One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.', p);
 }
 
+// ===========================================================================
+// 5. Host / OS Metrics (hostmetrics receiver) — summary view
+// ===========================================================================
+function hostOverview() {
+  const p = [];
+  const HN = "ResourceAttributes['host.name']";
+  const HOST = "AND ResourceAttributes['host.name'] IN (${host:sqlstring})";
+  const AT = (k) => `Attributes['${k}']`;
+  // Per-(host, cpu, scrape) busy fraction = sum of non-idle states; averaging that avoids
+  // double-counting cores and multiple state rows per scrape.
+  const busyInner = (extra) =>
+    `SELECT ${extra}${HN} AS host, ${AT('cpu')} AS cpu, TimeUnix,\n         sumIf(Value, ${AT('state')} != 'idle') AS busy\n  FROM ${DB}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND ${MFU} ${HOST}\n  GROUP BY host, cpu, TimeUnix${extra ? ', time' : ''}`;
+
+  p.push(stat('Hosts reporting', { h: 4, w: 6, x: 0, y: 0 },
+    `SELECT count(DISTINCT ${HN}) AS value FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND ${MFU} ${HOST}`,
+    { unit: 'short', decimals: 0 }));
+  p.push(stat('Avg CPU busy', { h: 4, w: 6, x: 6, y: 0 },
+    `SELECT 100 * avg(busy) AS value FROM (\n  ${busyInner('')})`,
+    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'yellow', value: 75 }, { color: 'red', value: 90 }] } }));
+  p.push(stat('Avg memory used', { h: 4, w: 6, x: 12, y: 0 },
+    `SELECT 100 * avgIf(Value, ${AT('state')} = 'used') AS value FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND ${MFU} ${HOST}`,
+    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'yellow', value: 80 }, { color: 'red', value: 92 }] } }));
+  p.push(stat('Avg load (1m)', { h: 4, w: 6, x: 18, y: 0 },
+    `SELECT avg(Value) AS value FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'system.cpu.load_average.1m' AND ${MFU} ${HOST}`,
+    { unit: 'short', decimals: 2 }));
+
+  p.push(timeseries('CPU busy % by host', { h: 8, w: 12, x: 0, y: 4 },
+    `SELECT time, host, 100 * avg(busy) AS "cpu %" FROM (\n  ${busyInner(`${MIU} AS time, `)})\nGROUP BY time, host ORDER BY time`,
+    { unit: 'percent' }));
+  p.push(timeseries('Memory used % by host', { h: 8, w: 12, x: 12, y: 4 },
+    `SELECT ${MIU} AS time, ${HN} AS host, 100 * avgIf(Value, ${AT('state')} = 'used') AS "mem %"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'system.memory.utilization' AND ${MFU} ${HOST}\nGROUP BY time, host ORDER BY time`,
+    { unit: 'percent' }));
+
+  // Disk / network I/O are cumulative counters (otel_metrics_sum); chart the per-interval
+  // delta summed across devices + directions per host.
+  const ioSql = (metric) =>
+    `SELECT time, host, sum(d) AS bytes FROM (\n  SELECT ${MIU} AS time, ${HN} AS host,\n         concat(${AT('device')}, '/', ${AT('direction')}) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_sum\n  WHERE MetricName = '${metric}' AND ${MFU} ${HOST}\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time`;
+  p.push(timeseries('Disk I/O by host (bytes / interval)', { h: 8, w: 12, x: 0, y: 12 },
+    ioSql('system.disk.io'), { unit: 'decbytes' }));
+  p.push(timeseries('Network I/O by host (bytes / interval)', { h: 8, w: 12, x: 12, y: 12 },
+    ioSql('system.network.io'), { unit: 'decbytes' }));
+
+  p.push(table('Hosts summary (latest in range)', { h: 9, w: 24, x: 0, y: 20 },
+    `SELECT c.host AS "Host",\n       round(c.cpu, 1) AS "CPU %",\n       round(m.mem, 1) AS "Mem %",\n       round(m.load, 2) AS "Load 1m",\n       round(m.swap, 1) AS "Swap %"\nFROM (\n  SELECT host, 100 * avg(busy) AS cpu FROM (\n    ${busyInner('')})\n  GROUP BY host) c\nLEFT JOIN (\n  SELECT ${HN} AS host,\n         100 * avgIf(Value, MetricName = 'system.memory.utilization' AND ${AT('state')} = 'used') AS mem,\n         avgIf(Value, MetricName = 'system.cpu.load_average.1m') AS load,\n         100 * avgIf(Value, MetricName = 'system.swap.utilization' AND ${AT('state')} = 'used') AS swap\n  FROM ${DB}.otel_metrics_gauge\n  WHERE MetricName IN ('system.memory.utilization', 'system.cpu.load_average.1m', 'system.swap.utilization') AND ${MFU} ${HOST}\n  GROUP BY host) m ON c.host = m.host\nORDER BY "CPU %" DESC`,
+    [
+      unitOverride('CPU %', 'percent', 1),
+      unitOverride('Mem %', 'percent', 1),
+      unitOverride('Swap %', 'percent', 1),
+    ]));
+
+  const hostVar = queryVar('host', 'Host',
+    `SELECT DISTINCT ${HN} FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND ${MFU} AND ${HN} != '' ORDER BY 1`);
+  return dashboard('clickstack-host-os', 'ClickStack · Host / OS Metrics',
+    'Host and OS health from the OpenTelemetry hostmetrics receiver (system.* in otel_metrics_gauge / otel_metrics_sum): CPU, memory, load, disk and network I/O per host.', p, [hostVar]);
+}
+
+// ===========================================================================
+// 6. Latency Histograms (OTLP explicit-bucket histograms) — summary view
+// ===========================================================================
+// Higher-level than the HyperDX histogram dashboard: average latency (delta Sum / delta
+// Count) + request rate rather than a full p50/p95/p99 bucket-interpolation breakdown.
+function latencyHistograms() {
+  const p = [];
+  const INSTID = "ResourceAttributes['service.instance.id']";
+  // Per-series (service, instance, attributes) delta of the cumulative Sum/Count columns.
+  // Keying by the full series identity keeps counter resets and multi-instance safe.
+  const deltaInner = (metrics, extraSelect, extraGroup) =>
+    `SELECT ${extraSelect}ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${DB}.otel_metrics_histogram\n  WHERE MetricName IN (${metrics}) AND ${MFU} ${SVC}\n  GROUP BY service, ${INSTID}, toString(Attributes)${extraGroup}`;
+
+  p.push(stat('Avg server latency', { h: 4, w: 8, x: 0, y: 0 },
+    `SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  ${deltaInner("'http.server.duration'", '', '')})`,
+    { unit: 'ms', decimals: 1 }));
+  p.push(stat('Server requests / sec', { h: 4, w: 8, x: 8, y: 0 },
+    `SELECT sum(dcount) / ${WINDOW_S_SAFE} AS value FROM (\n  ${deltaInner("'http.server.duration'", '', '')})`,
+    { unit: 'reqps', decimals: 1 }));
+  p.push(stat('Avg client latency', { h: 4, w: 8, x: 16, y: 0 },
+    `SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  ${deltaInner("'http.client.duration'", '', '')})`,
+    { unit: 'ms', decimals: 1 }));
+
+  p.push(timeseries('Avg server latency by service (ms)', { h: 8, w: 12, x: 0, y: 4 },
+    `SELECT time, service, sum(dsum) / greatest(sum(dcount), 1) AS "avg ms" FROM (\n  ${deltaInner("'http.server.duration'", `${MIU} AS time, `, ', time')})\nGROUP BY time, service ORDER BY time`,
+    { unit: 'ms' }));
+  p.push(timeseries('Server request rate by service (per interval)', { h: 8, w: 12, x: 12, y: 4 },
+    `SELECT time, service, sum(dcount) AS requests FROM (\n  ${deltaInner("'http.server.duration'", `${MIU} AS time, `, ', time')})\nGROUP BY time, service ORDER BY time`,
+    { unit: 'short' }));
+
+  p.push(table('Latency by service & operation (avg)', { h: 10, w: 24, x: 0, y: 12 },
+    `SELECT service AS "Service", metric AS "Metric",\n       round(sum(dsum) / greatest(sum(dcount), 1), 2) AS "Avg ms",\n       toUInt64(sum(dcount)) AS "Requests"\nFROM (\n  SELECT ServiceName AS service, MetricName AS metric,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${DB}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration', 'http.client.duration', 'rpc.server.duration') AND ${MFU} ${SVC}\n  GROUP BY service, metric, ${INSTID}, toString(Attributes))\nGROUP BY service, metric\nHAVING "Requests" > 0\nORDER BY "Requests" DESC\nLIMIT 30`,
+    [unitOverride('Avg ms', 'ms', 2)]));
+
+  const svcVar = queryVar('service', 'Service',
+    `SELECT DISTINCT ServiceName FROM ${DB}.otel_metrics_histogram WHERE ${MFU} AND ServiceName != '' ORDER BY ServiceName`);
+  return dashboard('clickstack-latency-histograms', 'ClickStack · Latency Histograms',
+    'Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.', p, [svcVar]);
+}
+
 // ---- main -----------------------------------------------------------------
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 write('executive-summary.json', execSummary());
 write('service-health-golden-signals.json', serviceHealth());
 write('kubernetes-cluster-overview.json', k8sOverview());
 write('logs-errors-overview.json', logsOverview());
+write('host-os-metrics.json', hostOverview());
+write('latency-histograms.json', latencyHistograms());
 console.log('done.');

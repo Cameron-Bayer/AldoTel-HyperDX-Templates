@@ -38,7 +38,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── README.md                 Section guide: install, pre-flight, alerts
 │   ├── DASHBOARD-CATALOG.md      Plain-language, per-dashboard field guide (setup tiers)
 │   ├── DASHBOARD-DEEP-DIVE.md    Tile-by-tile Q&A for every dashboard
-│   ├── dashboards/               9 dashboard templates (*.json) — 6 default + advanced/ (3 ClickHouse deep-dives)
+│   ├── dashboards/               11 dashboard templates (*.json) — 8 default + advanced/ (3 ClickHouse deep-dives)
 │   ├── alerts/                   Importable alert definitions + README
 │   ├── docs/                     Auto-generated per-dashboard reference + images
 │   ├── gen-docs.js               Regenerates docs/ from the templates
@@ -49,7 +49,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │
 ├── grafana/                    📊 Grafana deliverable
 │   ├── README.md                 Section guide: customer import + quick-start
-│   ├── dashboards/               4 dashboard templates (*.json)
+│   ├── dashboards/               6 dashboard templates (*.json)
 │   ├── alerting/                 Provisioned alert rules (YAML) + Terraform equivalent
 │   ├── provisioning/             Dev-harness datasource + dashboard providers
 │   ├── screenshots/              Live-preview images embedded in README.md
@@ -66,9 +66,10 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 
 ## 🔎 HyperDX section
 
-Nine per-domain HyperDX dashboards — six defaults (executive overview, services RED with a
-folded-in SLO strip, logs, Kubernetes, collector health, ClickHouse operations) plus three
-optional ClickHouse deep-dives under `dashboards/advanced/` — with an optional **alerts pack**.
+Eleven per-domain HyperDX dashboards — eight defaults (executive overview, services RED with a
+folded-in SLO strip, logs, Kubernetes, collector health, ClickHouse operations, host / OS metrics,
+latency histograms) plus three optional ClickHouse deep-dives under `dashboards/advanced/` — with an
+optional **alerts pack**.
 Everything is portable: the importer resolves your source/connection IDs at install time.
 
 - **Get started:** [`hyperdx/README.md`](hyperdx/README.md) — prerequisites, pre-flight check, install, and flags.
@@ -83,7 +84,7 @@ cd AldoTel-HyperDX-Templates/hyperdx
 
 ## 📊 Grafana section
 
-Four high-level Grafana dashboards over the same ClickHouse data, plus a **provisioned
+Six high-level Grafana dashboards over the same ClickHouse data, plus a **provisioned
 alerting pack** (YAML **and** Terraform) that notifies your on-call channel via a webhook.
 
 - **Get started:** [`grafana/README.md`](grafana/README.md) — customer quick-start and import steps.

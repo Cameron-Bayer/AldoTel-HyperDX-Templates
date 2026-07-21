@@ -4,11 +4,11 @@ A plain-language guide to every dashboard in this pack: **what it's for, why you
 exactly what telemetry it needs, and how to read it.** Use this to decide *which* dashboards to
 import for *your* setup — so nothing lands empty and nothing confuses your team.
 
-> **TL;DR** — There are **9 dashboards** across four telemetry domains (your apps, your Kubernetes
-> cluster, the OpenTelemetry Collector, and ClickHouse itself). The **6 default** dashboards live in
-> `hyperdx/dashboards/`; the **3 advanced ClickHouse deep dives** live in
+> **TL;DR** — There are **11 dashboards** across your telemetry domains (your apps, your hosts, your
+> Kubernetes cluster, the OpenTelemetry Collector, and ClickHouse itself). The **8 default** dashboards
+> live in `hyperdx/dashboards/`; the **3 advanced ClickHouse deep dives** live in
 > `hyperdx/dashboards/advanced/`. `./import.ps1` recurses into `advanced/`, so it still imports all
-> 9 unless you choose a subset. SLO now lives as a compact strip inside **Services — RED**.
+> 11 unless you choose a subset. SLO now lives as a compact strip inside **Services — RED**.
 
 ---
 
@@ -32,24 +32,25 @@ Imported display names are prefixed **`ClickStack ·`**; filenames and stable ta
 
 ## Dashboard locations
 
-- **`hyperdx/dashboards/`** — the **6 default** dashboards every customer should import:
+- **`hyperdx/dashboards/`** — the **8 default** dashboards every customer should import:
   `executive-overview`, `services-red`, `logs-overview`, `kubernetes-infrastructure`,
-  `collector-health`, and `clickhouse-health`.
+  `collector-health`, `clickhouse-health`, `host-os`, and `metrics-histograms`.
 - **`hyperdx/dashboards/advanced/`** — **3 advanced ClickHouse deep-dive** dashboards for operators
   and DBAs: `clickhouse-queryperf`, `clickhouse-storage-mergetree`, and
   `clickhouse-keeper-replication`.
 
 ---
 
-## The four telemetry domains
+## The telemetry domains
 
-A "Kubernetes cluster running on ClickHouse" is really **four independent telemetry pipelines**.
+A "Kubernetes cluster running on ClickHouse" is really several **independent telemetry pipelines**.
 Each dashboard reads from one (or, for the Executive Overview, all) of them:
 
 | Domain | What produces the data | Dashboards |
 |--------|------------------------|------------|
-| **Your applications** | Your services emit OTLP **traces** and **logs** | `services-red` (RED + SLO strip), `logs-overview` |
-| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` receivers | `kubernetes-infrastructure` |
+| **Your applications** | Your services emit OTLP **traces**, **logs**, and **histogram metrics** | `services-red` (RED + SLO strip), `logs-overview`, `metrics-histograms` |
+| **Your hosts / OS** | Collector `hostmetrics` receiver (`system.*`) | `host-os` |
+| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` + `k8sobjects` receivers | `kubernetes-infrastructure` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `collector-health` |
 | **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `clickhouse-health`; advanced: `clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication` |
 | **Everything (roll-up)** | All of the above; degrades gracefully | `executive-overview` |
@@ -86,7 +87,8 @@ metrics. Then these light up.
 ### 🟠 Tier 3 — Needs specific collector receivers
 Your OTel Collector must be deployed with the right receivers (and, for Kubernetes, RBAC).
 
-- **`kubernetes-infrastructure`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics).
+- **`kubernetes-infrastructure`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics); the cluster-events tiles also need the `k8sobjects` receiver.
+- **`host-os`** — needs the **`hostmetrics`** receiver (`system.*` CPU/memory/load/disk/network).
 - **`collector-health`** — needs the collector's **own** `:8888` self-telemetry scraped back into OTel.
 
 ### 🔵 Tier 4 — Needs your applications instrumented
@@ -96,6 +98,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 - **`services-red`** — needs OTLP **traces** with server spans (`SpanKind = 'Server'`) and
   `StatusCode`; includes the compact SLO strip.
 - **`logs-overview`** — needs application/container **logs** (filelog or OTLP).
+- **`metrics-histograms`** — needs OTLP **histogram** metrics (`http.*.duration` / `rpc.*.duration`).
 
 ### ⭐ Always works (degrades gracefully)
 - **`executive-overview`** — a cross-domain landing page. Every tile shows what it can and quietly hides
@@ -103,7 +106,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 
 > **The easy path:** if you deploy the **standard ClickStack distribution** (its Helm chart / the
 > reference OTel collector config), it wires up the k8s, collector-self, and ClickHouse receivers for
-> you — so all **9 dashboards** can light up. The tiers above matter mainly for hand-rolled or partial setups.
+> you — so all **11 dashboards** can light up. The tiers above matter mainly for hand-rolled or partial setups.
 
 ---
 
@@ -224,29 +227,39 @@ namespace/pod sources to find where that noise is coming from, then click into t
 ---
 
 ### 🟠 Kubernetes — Infrastructure — `kubernetes-infrastructure.json`
-*Source: metric · Tier 3 (needs kubeletstats + k8s_cluster receivers)*
+*Source: metric + log · Tier 3 (needs kubeletstats + k8s_cluster receivers; k8sobjects for events)*
 
 **What it's for.** The health of the **cluster underneath your apps**: nodes, pods, deployments, and
-namespaces — CPU, memory, restarts, availability, and filesystem pressure.
+namespaces — CPU, memory, restarts, availability, and filesystem pressure — plus per-container usage
+against its limits and a live feed of Kubernetes cluster events.
 
 **Why use it / who it's for.** For **platform / infrastructure engineers and cluster admins**. When a
 service is unhealthy, this tells you whether the cause is the *platform* (node out of memory, pods
-crash-looping, deployment under-replicated) rather than the app code.
+crash-looping, deployment under-replicated, a container pinned at its CPU/memory limit, or a Warning
+event like `BackOff`/`Unhealthy`) rather than the app code.
 
 **What you need.** A collector with the **`kubeletstats`** and **`k8s_cluster`** receivers (plus the
 RBAC to read them). Required metrics: `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,
-desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts`. Filesystem tiles are optional.
+desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts`. Filesystem, container-vs-limit
+(`k8s.container.{cpu,memory}_limit_utilization`, `container.uptime`) and event tiles are optional; the
+**cluster-events** tiles additionally need the **`k8sobjects`** receiver (watching `events.k8s.io`),
+which lands events in `otel_logs`.
 
 **What you'll see.**
 - **Nodes:** CPU (cores) and memory usage; a node status/uptime table; nodes-ready count; filesystem usage %.
 - **Pods:** deployment availability (ready/desired); pods by phase as a true count by phase; a pod
   status & resources table; pod CPU and memory vs their limits (%).
 - **Saturation & restarts:** pods not Running; container restarts; node memory saturation; top pods by restarts.
+- **Container utilization:** top containers by CPU-vs-limit and memory-vs-limit %, and a per-container
+  utilization table with uptime (containers without a limit set show 0%).
+- **Cluster events:** Warning-event count, top event reasons, and a recent-events stream (Normal vs
+  Warning) — cluster-wide, since event scope lives in the event body, not resource attributes.
 - **Namespaces:** per-namespace CPU and memory; a namespace summary table.
 
 **How to read it.** Top-down: nodes healthy? → deployments at desired replica count? → any pods stuck
-in a bad phase or near their CPU/memory limits? The saturation/restarts section is your early warning
-for OOMKills, crash loops, and node pressure.
+in a bad phase or near their CPU/memory limits? The saturation/restarts and container-utilization
+sections are your early warning for OOMKills, crash loops, and node pressure; the events feed explains
+*why* (image pull backoff, failed probes, evictions). Note the event tiles ignore the Namespace filter.
 
 ---
 
@@ -281,7 +294,63 @@ bundled **collector-drops alert** watches refused spans.
 
 ---
 
-### 🟡 ClickHouse — Operations — `clickhouse-health.json`
+### 🟠 Host / OS Metrics — `host-os.json`
+*Source: metric · Tier 3 (needs the hostmetrics receiver)*
+
+**What it's for.** The health of the **physical / virtual hosts** underneath the cluster: CPU busy %,
+load average, memory and swap usage, and disk / network throughput — per host.
+
+**Why use it / who it's for.** For **infrastructure and platform engineers**. When Kubernetes shows
+node pressure, this is the layer below it — is the box itself CPU-saturated, out of memory, swapping,
+or maxing out a disk/NIC? It answers "is this a host problem?" independent of the k8s scheduler view.
+
+**What you need.** A collector with the **`hostmetrics`** receiver enabled (`system.*` scrapers).
+Required: `system.cpu.utilization`, `system.memory.utilization`. Optional: `system.cpu.load_average.1m`,
+`system.swap.utilization`, `system.disk.io`, `system.network.io`.
+
+**What you'll see.**
+- **CPU & load:** CPU busy % (all non-idle states, per host) and load average (1m).
+- **Memory & swap:** memory used % and swap used %.
+- **Disk & network:** read/write and receive/transmit throughput (bytes/sec) per host.
+- **Hosts summary:** a per-host table of CPU %, memory %, load, and swap for a quick fleet scan.
+
+**How to read it.** Watch CPU busy % and load together — a load average well above the core count with
+high CPU % means the host is saturated. Rising swap % on a memory-heavy host warns of impending OOM.
+Use the disk/network lines to spot an I/O-bound host. The summary table sorts the fleet so the hottest
+hosts surface first.
+
+---
+
+### 🔵 Latency Histograms — `metrics-histograms.json`
+*Source: metric · Tier 4 (needs app OTLP histogram metrics)*
+
+**What it's for.** True **latency percentiles** (p50 / p95 / p99 / avg) computed from OpenTelemetry
+**explicit-bucket histogram** metrics — for HTTP server and client calls and RPC server calls — plus
+ClickHouse Keeper request latency.
+
+**Why use it / who it's for.** For **service owners, SREs, and performance engineers** who want
+latency straight from the metrics pipeline (aggregated, cheap, always-on) rather than sampled traces.
+It complements **Services — RED**: RED derives latency from trace spans, this derives it from
+histogram buckets, so you get latency even for services that only emit metrics.
+
+**What you need.** Applications emitting OTLP **histogram** metrics — required: `http.server.duration`.
+Optional: `http.client.duration`, `rpc.server.duration`, and (for the Keeper tile)
+`ClickHouseHistogramMetrics_keeper_response_time_ms`. Percentiles are interpolated from the cumulative
+bucket counts (delta over the selected range), so counter resets and multiple instances are handled.
+
+**What you'll see.**
+- **HTTP server / client & RPC server latency:** per-operation p50/p95/p99/avg tables (ms).
+- **Trends:** average latency and request rate over time, by service.
+- **ClickHouse Keeper latency:** Keeper request-time percentiles from the CH histogram metrics.
+
+**How to read it.** p99 far above p50 means a long tail — a subset of requests is slow even if the
+median looks fine. Compare server vs client latency to place blame (your service vs a downstream
+dependency). The request-rate trend gives the traffic context behind a latency change. All values are
+milliseconds.
+
+---
+
+
 *Source: metric + SQL · Tier 2 (needs ClickHouse metrics scraped; SQL KPIs use `system.*` tables)*
 
 **What it's for.** The operational health of the **ClickHouse server** backing your stack: disk
@@ -396,15 +465,15 @@ that's normal; the "at a glance" session/watch counts still confirm Keeper is al
 
 ## Which dashboards should *I* import?
 
-Pick by role — but remember the **6 default dashboards** are the safe first import for everyone.
+Pick by role — but remember the **8 default dashboards** are the safe first import for everyone.
 
 | If you're a… | Start with |
 |--------------|-----------|
-| **Data scientist / analyst** | `executive-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
-| **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `collector-health`, `clickhouse-health`, `executive-overview` |
-| **SRE / reliability owner** | `services-red` (RED + SLO strip), `logs-overview`, `collector-health`, `executive-overview` |
+| **Data scientist / analyst** | `executive-overview`, `services-red`, `logs-overview`, `metrics-histograms` — the app-signal dashboards you'll build analysis on |
+| **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `host-os`, `collector-health`, `clickhouse-health`, `executive-overview` |
+| **SRE / reliability owner** | `services-red` (RED + SLO strip), `metrics-histograms`, `logs-overview`, `collector-health`, `executive-overview` |
 | **ClickHouse operator / DBA** | `clickhouse-health` first, then advanced deep dives: `clickhouse-storage-mergetree`, `clickhouse-queryperf`, `clickhouse-keeper-replication` |
-| **Just kicking the tires (any cluster)** | the 6 defaults — they show what is flowing today and degrade gracefully as you add data |
+| **Just kicking the tires (any cluster)** | the 8 defaults — they show what is flowing today and degrade gracefully as you add data |
 
 ---
 

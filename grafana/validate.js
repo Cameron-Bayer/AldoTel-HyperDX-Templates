@@ -13,7 +13,8 @@ async function run(sql, queryType, format) {
     .replace(/\$\{service:sqlstring\}/g,
       "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE Timestamp > now() - INTERVAL 3 HOUR " +
       "UNION DISTINCT SELECT DISTINCT ServiceName FROM default.otel_logs WHERE Timestamp > now() - INTERVAL 3 HOUR")
-    .replace(/\$\{namespace:sqlstring\}/g, "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase'");
+    .replace(/\$\{namespace:sqlstring\}/g, "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase'")
+    .replace(/\$\{host:sqlstring\}/g, "SELECT DISTINCT ResourceAttributes['host.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization'");
   const body = {
     from: 'now-3h', to: 'now',
     queries: [{ refId: 'A', datasource: { type: 'grafana-clickhouse-datasource', uid: 'clickstack-ch' },

@@ -26,13 +26,15 @@ importer recurses into that subfolder when you import the full pack.
 - [7. ClickHouse — Storage & MergeTree](#7-clickhouse--storage--mergetree)
 - [8. ClickHouse — Keeper & Replication](#8-clickhouse--keeper--replication)
 - [9. Executive Overview](#9-executive-overview)
+- [10. Host / OS Metrics](#10-host--os-metrics)
+- [11. Latency Histograms](#11-latency-histograms)
 - [Quick-Reference Playbook](#quick-reference-playbook)
 
 ---
 
 ## Core Concepts
 
-A few ideas underpin every dashboard. Understanding them once makes all nine easy to read.
+A few ideas underpin every dashboard. Understanding them once makes all eleven easy to read.
 
 ### The three data sources
 
@@ -150,10 +152,10 @@ Both styles respect the dashboard filters described below.
 
 ## 3. Kubernetes — Infrastructure
 
-**Data source:** Metrics (Kubernetes)  ·  **Filters:** Namespace
-**Purpose:** The health of the cluster that hosts your applications — its nodes, pods, and namespaces.
+**Data source:** Metrics (Kubernetes) + Logs (events)  ·  **Filters:** Namespace
+**Purpose:** The health of the cluster that hosts your applications — its nodes, pods, namespaces, container-vs-limit utilization, and cluster events.
 
-> This dashboard requires the Kubernetes infrastructure collectors (the `kubeletstats` and `k8s_cluster` receivers).
+> This dashboard requires the Kubernetes infrastructure collectors (the `kubeletstats` and `k8s_cluster` receivers). The **cluster-events** section additionally needs the `k8sobjects` receiver, which watches `events.k8s.io` and lands events in the Logs source.
 
 ### Nodes
 
@@ -187,6 +189,20 @@ Both styles respect the dashboard filters described below.
 
 **Pods not Running**, **container restarts**, **node memory saturation**, and **top pods by restarts** — the fast path to crash loops and pressure.
 - **Q: How should I read it?** Start with pods not Running and restart leaders, then check node memory saturation to decide whether the failure is app-specific or resource pressure on the node.
+
+### Container utilization
+
+**Container CPU vs limit %** and **Container memory vs limit %** — the top containers by usage against their configured limits, over time.
+- **Q: How is this different from the pod tiles above?** These are per **container** (a pod can run several), so they pinpoint exactly which container in a multi-container pod is hot. A container without a configured limit reports 0%.
+
+**Container utilization vs limits** — a per-container table of CPU %, memory %, and uptime.
+- **Q: Which column matters most?** A container pinned near 100% CPU-vs-limit is being throttled; one near 100% memory-vs-limit is close to an OOMKill. Short uptime next to high restarts elsewhere confirms a crash loop.
+
+### Cluster events
+
+**Warning events (in range)**, **Top event reasons**, and **Recent events** — the Kubernetes event stream (from the `k8sobjects` receiver), split into Normal and Warning.
+- **Q: How should I read it?** Warning events (`BackOff`, `Unhealthy`, `FailedScheduling`, evictions) explain *why* a pod is unhealthy — the cause behind a bad phase or restart. Top reasons show recurring problems at a glance; the recent stream is the chronological detail.
+- **Q: Why do these ignore the Namespace filter?** An event's namespace lives inside the event body, not as a resource attribute, so these tiles are intentionally cluster-wide.
 
 ### Namespaces
 
@@ -374,15 +390,74 @@ Both styles respect the dashboard filters described below.
 
 ---
 
+## 10. Host / OS Metrics
+
+**Data source:** Metrics (Host)  ·  **Filters:** Host
+**Purpose:** The health of the physical or virtual hosts beneath the cluster — CPU, load, memory, swap, and I/O.
+
+> This dashboard requires the collector's `hostmetrics` receiver (the `system.*` scrapers). It reads the same OTel metrics schema as the other metric dashboards.
+
+### CPU & load
+
+**CPU busy %** — the percentage of time the CPU spent doing work (all non-idle states), per host.
+- **Q: How is it computed?** Per CPU core per scrape, the non-idle fractions are summed, then averaged across cores and the interval — so it is not inflated by core count.
+
+**Load average (1m)** — the run-queue length averaged over one minute.
+- **Q: How should I read it?** Compare against the core count: a load well above the number of cores means processes are waiting for CPU even if busy % looks moderate.
+
+### Memory & swap
+
+**Memory used %** and **Swap used %** — utilization of RAM and swap per host.
+- **Q: Why watch swap?** Rising swap usage on a memory-pressured host is an early warning of impending OOM and of I/O slowdown as the kernel pages to disk.
+
+### Disk & network
+
+**Disk I/O** and **Network I/O** — read/write and receive/transmit throughput per host.
+- **Q: How should I read it?** These identify an I/O-bound host. A sustained ceiling on a device or interface often explains latency that CPU and memory tiles don't.
+
+### Hosts summary
+
+**Hosts summary** — a per-host table of CPU %, memory %, load, and swap for a quick fleet scan, hottest first.
+
+---
+
+## 11. Latency Histograms
+
+**Data source:** Metrics (histograms)  ·  **Filters:** Service
+**Purpose:** Request latency percentiles derived from OpenTelemetry explicit-bucket histogram metrics — an always-on, aggregated complement to the trace-based latency in *Services — RED*.
+
+> This dashboard requires applications that emit OTLP **histogram** metrics (`http.server.duration`, and optionally `http.client.duration` / `rpc.server.duration`). The ClickHouse Keeper tile uses `ClickHouseHistogramMetrics_keeper_*`.
+
+### Latency percentiles
+
+**HTTP server / client & RPC server latency** — per-operation p50 / p95 / p99 / average latency tables (ms).
+- **Q: How are percentiles computed from a histogram?** The dashboard takes the delta of each cumulative bucket over the selected range (keyed by the full series identity so counter resets and multiple instances are safe), then interpolates the target quantile within the bucket that crosses it.
+- **Q: How should I read it?** A p99 far above the p50 means a slow tail — some requests are slow even when the median is fine. Compare server vs client latency to separate your own service's time from a downstream dependency's.
+
+### Trends
+
+**Average latency by service** and **Request rate by service** — latency and traffic over time.
+- **Q: Why show request rate alongside latency?** A latency change is only meaningful with traffic context — a p99 spike at very low volume is often a single slow request, not a systemic regression.
+
+### ClickHouse Keeper latency
+
+**Keeper request latency** — percentiles of ClickHouse Keeper request-processing time from the CH histogram metrics.
+- **Q: Why is it here?** Keeper coordinates ClickHouse replication; rising Keeper latency can slow inserts and replication cluster-wide.
+
+---
+
 ## Quick-Reference Playbook
 
 | Situation | Start here | Then |
 | --- | --- | --- |
 | Is anything wrong right now? | Executive Overview | Follow the linked service tables |
 | The application feels slow | Services — RED | Slowest routes → open the traces |
+| Latency without trace coverage | Latency Histograms | Compare server vs client percentiles |
 | Are we meeting our reliability target? | Services — RED | Review the SLO strip and multi-window burn rate |
 | Errors started after a deployment | Logs — Overview | *New log patterns* chart |
-| A pod or node looks unhealthy | Kubernetes — Infrastructure | Pods table (restarts, memory vs limit) |
+| A pod or node looks unhealthy | Kubernetes — Infrastructure | Pods table (restarts, memory vs limit), then cluster events |
+| A container is throttled or OOMing | Kubernetes — Infrastructure | Container utilization vs limits |
+| The host itself looks saturated | Host / OS Metrics | CPU busy % + load, then swap and I/O |
 | A dashboard is unexpectedly empty | Collector — Pipeline Health | Refused/failed spans, scraper errors |
 | Queries or the database are slow | ClickHouse — Query Performance | Slowest queries table |
 | Inserts are failing or disk is filling | ClickHouse — Storage | Active parts per table |

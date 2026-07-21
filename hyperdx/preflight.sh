@@ -65,8 +65,10 @@ check_has_data() {
   if [ "$kind" = "metric" ]; then
     # 'count' is not a valid aggregation for metric series (returns no datapoints), and a gauge
     # can legitimately read 0 while still flowing — use avg and test for *presence* of datapoints.
-    series="$(jq -n --arg s "$sid" --arg m "$mname" --arg t "$mtype" \
-      '{sourceId:$s, aggFn:"avg", where:"", groupBy:[], metricName:$m, metricDataType:$t}')"
+    # Histogram metrics reject avg/sum, so verify them with count (supported for that data type).
+    local magg="avg"; [ "$mtype" = "histogram" ] && magg="count"
+    series="$(jq -n --arg s "$sid" --arg m "$mname" --arg t "$mtype" --arg a "$magg" \
+      '{sourceId:$s, aggFn:$a, where:"", groupBy:[], metricName:$m, metricDataType:$t}')"
   elif [ -n "$where" ]; then
     series="$(jq -n --arg s "$sid" --arg w "$where" \
       '{sourceId:$s, aggFn:"count", where:$w, whereLanguage:"lucene", groupBy:[]}')"

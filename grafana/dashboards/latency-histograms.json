@@ -1,0 +1,524 @@
+{
+  "uid": "clickstack-latency-histograms",
+  "title": "ClickStack · Latency Histograms",
+  "description": "Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.",
+  "tags": [
+    "clickstack",
+    "opentelemetry"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "ClickHouse datasource",
+        "multi": false,
+        "name": "clickhouseDatasource",
+        "options": [],
+        "query": "grafana-clickhouse-datasource",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${clickhouseDatasource}"
+        },
+        "definition": "SELECT DISTINCT ServiceName FROM ${database}.otel_metrics_histogram WHERE $__timeFilter(TimeUnix) AND ServiceName != '' ORDER BY ServiceName",
+        "query": {
+          "refId": "service-var",
+          "rawSql": "SELECT DISTINCT ServiceName FROM ${database}.otel_metrics_histogram WHERE $__timeFilter(TimeUnix) AND ServiceName != '' ORDER BY ServiceName",
+          "meta": {
+            "builderOptions": {
+              "database": "default"
+            }
+          }
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": null,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ],
+          "selected": false
+        },
+        "options": [],
+        "hide": 0,
+        "sort": 1,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Avg server latency",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Server requests / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT sum(dcount) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Avg client latency",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.client.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Avg server latency by service (ms)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, service, sum(dsum) / greatest(sum(dcount), 1) AS \"avg ms\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes), time)\nGROUP BY time, service ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Server request rate by service (per interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, service, sum(dcount) AS requests FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes), time)\nGROUP BY time, service ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Latency by service & operation (avg)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT service AS \"Service\", metric AS \"Metric\",\n       round(sum(dsum) / greatest(sum(dcount), 1), 2) AS \"Avg ms\",\n       toUInt64(sum(dcount)) AS \"Requests\"\nFROM (\n  SELECT ServiceName AS service, MetricName AS metric,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration', 'http.client.duration', 'rpc.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, metric, ResourceAttributes['service.instance.id'], toString(Attributes))\nGROUP BY service, metric\nHAVING \"Requests\" > 0\nORDER BY \"Requests\" DESC\nLIMIT 30",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    }
+  ]
+}

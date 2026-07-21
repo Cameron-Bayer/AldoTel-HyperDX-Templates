@@ -1,7 +1,7 @@
 {
   "uid": "clickstack-k8s-overview",
   "title": "ClickStack · Kubernetes Cluster Overview",
-  "description": "Cluster and workload health from the OpenTelemetry k8s cluster/kubelet receivers (otel_metrics_gauge): nodes, pods, CPU/memory, restarts.",
+  "description": "Cluster and workload health from the OpenTelemetry k8s cluster/kubelet/k8sobjects receivers (otel_metrics_gauge + otel_logs): nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.",
   "tags": [
     "clickstack",
     "opentelemetry"
@@ -824,6 +824,531 @@
                       "value": 5
                     }
                   ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Container utilization vs limits",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Top 10 containers by CPU vs limit (%)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container, 100 * avg(Value) AS \"cpu vs limit %\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.cpu_limit_utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  AND concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) IN (\n    SELECT concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS ck FROM ${database}.otel_metrics_gauge\n    WHERE MetricName = 'k8s.container.cpu_limit_utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n    GROUP BY ck ORDER BY avg(Value) DESC LIMIT 10)\nGROUP BY time, container ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Top 10 containers by memory vs limit (%)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container, 100 * avg(Value) AS \"mem vs limit %\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.memory_limit_utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  AND concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) IN (\n    SELECT concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS ck FROM ${database}.otel_metrics_gauge\n    WHERE MetricName = 'k8s.container.memory_limit_utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n    GROUP BY ck ORDER BY avg(Value) DESC LIMIT 10)\nGROUP BY time, container ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Container utilization vs limits (latest)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\",\n       ResourceAttributes['k8s.pod.name'] AS \"Pod\",\n       ResourceAttributes['k8s.container.name'] AS \"Container\",\n       round(100 * argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_limit_utilization'), 1) AS \"CPU vs limit %\",\n       round(100 * argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_limit_utilization'), 1) AS \"Mem vs limit %\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName IN ('k8s.container.cpu_limit_utilization', 'k8s.container.memory_limit_utilization') AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY 1, 2, 3\nORDER BY \"CPU vs limit %\" DESC\nLIMIT 25",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU vs limit %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mem vs limit %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Cluster events (k8s events.k8s.io)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Warning events (in range)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT countIf(JSONExtractString(Body, 'object', 'type') = 'Warning') AS value FROM ${database}.otel_logs WHERE ScopeName LIKE '%k8sobjectsreceiver%' AND $__timeFilter(Timestamp)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Top event reasons",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 48
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT JSONExtractString(Body, 'object', 'reason') AS \"Reason\",\n       JSONExtractString(Body, 'object', 'type') AS \"Type\",\n       JSONExtractString(Body, 'object', 'regarding', 'kind') AS \"Object kind\",\n       count() AS \"Count\"\nFROM ${database}.otel_logs\nWHERE ScopeName LIKE '%k8sobjectsreceiver%' AND $__timeFilter(Timestamp)\nGROUP BY 1, 2, 3\nORDER BY \"Count\" DESC\nLIMIT 15",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Warning": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "Normal": {
+                        "color": "green",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Recent events",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT Timestamp AS \"Time\",\n       JSONExtractString(Body, 'object', 'type') AS \"Type\",\n       JSONExtractString(Body, 'object', 'reason') AS \"Reason\",\n       concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), ' ', JSONExtractString(Body, 'object', 'regarding', 'namespace'), '/', JSONExtractString(Body, 'object', 'regarding', 'name')) AS \"Object\",\n       JSONExtractString(Body, 'object', 'note') AS \"Message\"\nFROM ${database}.otel_logs\nWHERE ScopeName LIKE '%k8sobjectsreceiver%' AND $__timeFilter(Timestamp)\nORDER BY Timestamp DESC\nLIMIT 100",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Warning": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "Normal": {
+                        "color": "green",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
                 }
               }
             ]

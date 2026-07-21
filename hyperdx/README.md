@@ -60,9 +60,11 @@ flags, and prerequisites are in [Install](#install) below.
 | `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (server-span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
 | `dashboards/services-red.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency heatmap — plus a folded-in **SLO strip** (availability SLI, error budget, multi-window burn rate 1h/6h/24h/3d) | trace |
 | `dashboards/logs-overview.json` | Log volume by severity, error rate, normalized error signatures, **new** error patterns, error sources by namespace/pod, live error stream | log |
-| `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod **count** by phase, restarts, saturation, top pod memory, node filesystem usage | metric |
+| `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod **count** by phase, restarts, saturation, top pod memory, node filesystem usage — plus **container-vs-limit** CPU/memory utilization and **cluster events** (Warnings, top reasons, live stream) | metric + log |
 | `dashboards/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans & metric points, exporter queue utilization & sent, processor in/out (drops), scraper errors, collector CPU/mem | metric |
 | `dashboards/clickhouse-health.json` | **ClickHouse — Operations:** query/insert rate, failed queries, memory tracking, merges/mutations, running queries, disk free %, active merges, pending mutations | metric + SQL |
+| `dashboards/host-os.json` | **Host / OS:** CPU busy %, load average, memory & swap used %, disk & network throughput, and a per-host summary table — from the `hostmetrics` receiver | metric |
+| `dashboards/metrics-histograms.json` | **Latency histograms:** p50/p95/p99/avg for HTTP server/client + RPC server calls (bucket-interpolated), avg-latency & request-rate trends, and ClickHouse Keeper latency — from OTLP explicit-bucket histograms | metric |
 
 **Advanced ClickHouse deep-dives** (`dashboards/advanced/` — optional; for ClickHouse operators/DBAs):
 
@@ -109,13 +111,15 @@ stores, so there's no extra collection cost or risk.
 
 ```mermaid
 flowchart LR
-    subgraph Domains["Four telemetry domains"]
-        A["Applications<br/>OTLP traces + logs"]
-        K["Kubernetes cluster<br/>kubeletstats + k8s_cluster"]
+    subgraph Domains["Telemetry domains"]
+        A["Applications<br/>OTLP traces + logs + histograms"]
+        H["Hosts / OS<br/>hostmetrics system.*"]
+        K["Kubernetes cluster<br/>kubeletstats + k8s_cluster + k8sobjects"]
         COL["OTel Collector<br/>self-telemetry :8888"]
         CHm["ClickHouse server<br/>system tables + scraped metrics"]
     end
     A --> C["OpenTelemetry<br/>Collector"]
+    H --> C
     K --> C
     COL --> C
     C -->|writes| CH[("ClickHouse<br/>otel_logs / otel_traces /<br/>otel_metrics")]
@@ -152,7 +156,9 @@ The importer resolves those at install time, so the JSON stays portable.
    a **Logs** (kind `log`), **Traces** (kind `trace`), and **Metrics** (kind `metric`) source.
 2. Telemetry flowing in via the standard OTel collector:
    - ClickHouse metrics (Prometheus/system metrics) for `clickhouse-health`
-   - `kubeletstats` + `k8s_cluster` receivers for `kubernetes-infrastructure`
+   - `kubeletstats` + `k8s_cluster` receivers for `kubernetes-infrastructure` (add `k8sobjects` for its cluster-events tiles)
+   - `hostmetrics` receiver (`system.*`) for `host-os`
+   - app OTLP **histogram** metrics (`http.*.duration` / `rpc.*.duration`) for `metrics-histograms`
    - app traces + logs for `services-red` / `logs-overview`
 3. A **Personal API Access Key**: HyperDX → **Team Settings → API Keys**.
 
@@ -255,17 +261,19 @@ for the full signal table, channel setup, and tuning notes.
 
 ## Grafana dashboards
 
-Prefer Grafana, or want a high-level/executive view? [`../grafana/`](../grafana/README.md) contains four
+Prefer Grafana, or want a high-level/executive view? [`../grafana/`](../grafana/README.md) contains six
 importable Grafana dashboards that read the **same ClickHouse data** — no extra collectors or schema
 changes. They use the [ClickHouse data source](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/)
 and a portable **datasource variable**, so on import you just pick your ClickHouse connection:
 
 - **Executive Summary** — one pane combining top signals across services, Kubernetes, and logs.
 - **Service Health (Golden Signals)** — RED metrics per service from `otel_traces`.
-- **Kubernetes Cluster Overview** — nodes, pods, CPU/memory, restarts from `otel_metrics_gauge`.
+- **Kubernetes Cluster Overview** — nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.
 - **Logs & Errors Overview** — volume by severity, error rate, and recent errors from `otel_logs`.
+- **Host / OS Metrics** — CPU, load, memory/swap, and disk/network I/O per host from `system.*`.
+- **Latency Histograms** — average latency and request rate from `otel_metrics_histogram`.
 
-The service/Kubernetes/logs boards include **Service / Namespace filter dropdowns**. See
+The service/Kubernetes/logs/host/latency boards include **Service / Namespace / Host filter dropdowns**. See
 [`../grafana/README.md`](../grafana/README.md) for customer quick-start and import steps.
 
 **Grafana alerts:** the [`../grafana/alerting/`](../grafana/alerting/README.md) folder adds six
@@ -283,7 +291,7 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | Dashboard | Source kind | Required receivers / signals | Optional (degrades) |
 |-----------|-------------|------------------------------|---------------------|
 | `clickhouse-health` — Operations | metric + SQL | ClickHouse metrics scraped into OTel — `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum), `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) | `*_InsertedRows`, `ClickHouseMetrics_{Merge,PartMutation}`; Raw SQL on `system.disks` / `system.merges` / `system.mutations` powers the disk-free %, active-merges and pending-mutations tiles |
-| `kubernetes-infrastructure` | metric | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}` |
+| `kubernetes-infrastructure` | metric + log | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}`; container-vs-limit tiles use `k8s.container.{cpu,memory}_limit_utilization` + `container.uptime`; cluster-events tiles need the `k8sobjects` receiver (`ScopeName:*k8sobjectsreceiver*` in `otel_logs`) |
 | `services-red` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`) |
 | `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:error/fatal`) |
 | `collector-health` | metric | OTel Collector self-telemetry scraped into OTel (Prometheus receiver on the collector's `:8888`) — `otelcol_receiver_accepted_spans_total`, `otelcol_exporter_{sent_spans_total,queue_size,queue_capacity}` | processor in/out items, scraper points, collector CPU/mem |
@@ -291,6 +299,8 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | `clickhouse-storage-mergetree` _(advanced)_ | SQL only | Raw SQL on `system.parts` + `system.part_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from them (`part_log` is on by default). No metric receivers required. | — (all tiles are Raw SQL) |
 | `clickhouse-keeper-replication` _(advanced)_ | metric + SQL | None hard-required (degrades). Keeper tiles use `ClickHouseMetrics_ZooKeeper*`/`Keeper*` + `ClickHouseProfileEvents_Keeper*` if scraped | Keeper metrics; **replication tables** (`system.replicas` / `system.replication_queue`) are empty on single-node and populate only on replicated/clustered installs |
 | `executive-overview` | trace + log + metric | None hard-required — cross-cutting roll-up; every tile degrades when its signal is absent | traces (error %, p95, drill-down), logs (error %, drill-down), CH metrics, collector metrics |
+| `host-os` | metric | `hostmetrics` receiver — `system.cpu.utilization`, `system.memory.utilization` (gauge) | `system.cpu.load_average.1m`, `system.swap.utilization`, `system.disk.io`, `system.network.io` |
+| `metrics-histograms` | metric | Application OTLP explicit-bucket histograms — `http.server.duration` (histogram) | `http.client.duration`, `rpc.server.duration`, `ClickHouseHistogramMetrics_keeper_response_time_ms` |
 
 **Baseline requirements (all dashboards):** HyperDX **≥ 2.27** (v2 dashboard API), the three
 default sources created in HyperDX (`log` / `trace` / `metric`), and data landed in the standard

@@ -12,7 +12,7 @@ teams that already standardize on Grafana.
 > **Running ClickStack on Kubernetes?** Its bundled Grafana uses ephemeral storage, so
 > UI/API imports vanish on the next pod restart. Use the durable ConfigMap-provisioning
 > installer in [`kubernetes/`](kubernetes/README.md) — one command installs the data
-> source, all four dashboards, and the alerts so they survive restarts.
+> source, all six dashboards, and the alerts so they survive restarts.
 
 ---
 
@@ -28,7 +28,7 @@ Follow these steps once and you'll have both.
 > On **Grafana Cloud** (or anywhere you can't write to `/etc/grafana/provisioning`), see
 > [Installing alerts without filesystem access](#installing-alerts-without-filesystem-access-grafana-cloud).
 
-**1. Download the two folders** — `grafana/dashboards/` (4 JSON files) and
+**1. Download the two folders** — `grafana/dashboards/` (6 JSON files) and
 `grafana/alerting/` (3 YAML files).
 
 **2. Add the ClickHouse data source** — *Connections → Data sources → Add → ClickHouse*.
@@ -42,7 +42,7 @@ field). This is the one gotcha:
 
 **3. Import the dashboards (UI, no restart)** — for each JSON:
 *Dashboards → New → Import → Upload JSON file →* pick your ClickHouse datasource →
-**Import**. Repeat for all four.
+**Import**. Repeat for all six.
 
 **4. Configure the alerts *before* you install them (so you restart only once)** —
 edit the two YAML files in `alerting/` on disk first:
@@ -87,13 +87,15 @@ Grafana API.
 | `dashboards/service-health-golden-signals.json` | **Service Health (Golden Signals)** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
+| `dashboards/host-os-metrics.json` | **Host / OS Metrics** | `otel_metrics_gauge`, `otel_metrics_sum` | Are the underlying hosts healthy? CPU, memory, load, disk and network I/O per host. |
+| `dashboards/latency-histograms.json` | **Latency Histograms** | `otel_metrics_histogram` | How fast are requests? Average latency and request rate for HTTP server/client and RPC calls. |
 
-All four use only the **default OpenTelemetry ClickHouse schema** that ClickStack ships
+All six use only the **default OpenTelemetry ClickHouse schema** that ClickStack ships
 with, so they work on any ClickStack / HyperDX + ClickHouse deployment.
 
-**Filters:** the Service Health, Kubernetes, and Logs dashboards include a **Service** or
-**Namespace** drop-down (multi-select, defaults to *All*) at the top, so you can narrow
-every panel to the workloads you care about. The Executive Summary is intentionally
+**Filters:** the Service Health, Kubernetes, Logs, Host / OS, and Latency dashboards include a
+**Service**, **Namespace**, or **Host** drop-down (multi-select, defaults to *All*) at the top, so
+you can narrow every panel to the workloads you care about. The Executive Summary is intentionally
 unfiltered — it's the always-on overview.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
@@ -115,6 +117,8 @@ the telemetry you actually send. Use this to predict what will have data before 
 | **Service Health (Golden Signals)** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
 | **Kubernetes Cluster Overview** | `otel_metrics_gauge` from the OTel **k8s cluster receiver** + **kubelet stats receiver** (ClickStack's infra collectors ship these) | those receivers aren't enabled or scraping |
 | **Logs & Errors Overview** | log rows in `otel_logs` (container logs and/or app OTLP logs) | no log pipeline is wired up |
+| **Host / OS Metrics** | `system.*` metrics from the OTel **hostmetrics receiver** | the hostmetrics receiver isn't enabled |
+| **Latency Histograms** | explicit-bucket histogram metrics (`http.*.duration` / `rpc.*.duration`) in `otel_metrics_histogram` | your apps don't emit OTLP histogram metrics |
 
 **Empty dashboard? quick checks**
 
@@ -189,7 +193,7 @@ dashboards and alerts work on any customer's cluster unchanged — with no vendo
 2. Upload one of the JSON files from `dashboards/` (or paste its contents).
 3. When prompted, the dashboard exposes a **"ClickHouse datasource"** variable at the top —
    pick your ClickHouse connection. That's the only wiring step; every panel follows it.
-4. Repeat for the other three dashboards.
+4. Repeat for the other five dashboards.
 
 No panel is hard-wired to a specific data source — they all reference a dashboard
 **datasource variable** (`${clickhouseDatasource}`) and a hidden **`database`** variable, so the
