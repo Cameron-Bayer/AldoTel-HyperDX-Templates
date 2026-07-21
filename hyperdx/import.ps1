@@ -85,7 +85,7 @@ if ($Only) {
 }
 
 foreach ($f in $files) {
-  $raw = Get-Content $f.FullName -Raw
+  $raw = Get-Content $f.FullName -Raw -Encoding UTF8
   $obj = $raw | ConvertFrom-Json
   $tmplTag = $obj.tags | Where-Object { $_ -like 'tmpl:*' } | Select-Object -First 1
   if (-not $tmplTag) { Write-Warning "$($f.Name) has no 'tmpl:' tag; skipping."; continue }
@@ -133,11 +133,11 @@ foreach ($f in $files) {
         $putBody = $payload | ConvertTo-Json -Depth 40
       }
       $resp = Invoke-RestMethod -Uri "$BaseUrl/api/v2/dashboards/$($match.id)" -Headers $Headers `
-                -Method Put -ContentType "application/json" -Body $putBody
+                -Method Put -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($putBody))
       Write-Host "Updated $($f.Name) -> $($match.id)" -ForegroundColor Green
     } else {
       $resp = Invoke-RestMethod -Uri "$BaseUrl/api/v2/dashboards" -Headers $Headers `
-                -Method Post -ContentType "application/json" -Body $raw
+                -Method Post -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($raw))
       $id = if ($resp.data.id) { $resp.data.id } else { $resp.id }
       Write-Host "Created $($f.Name) -> $id" -ForegroundColor Green
     }
