@@ -89,34 +89,7 @@ SELECT countIf(ready = 1) AS "Nodes ready" FROM (
 - **Drill-down:** click a row → opens search
 - **Columns used:** `ServiceName`, `SeverityText`
 
-## Traffic & ingest
-
-### Ingest throughput — spans accepted vs refused — line · Raw SQL
-
-- **Tables:** `default.otel_metrics_sum`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
-  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
-  FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-           ResourceAttributes['service.instance.id'] AS inst,
-           if(MetricName = 'otelcol_receiver_accepted_spans_total', 'accepted', 'refused') AS kind,
-           max(Value) AS cum
-    FROM default.otel_metrics_sum
-    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-      AND MetricName IN ('otelcol_receiver_accepted_spans_total', 'otelcol_receiver_refused_spans_total')
-    GROUP BY ts, inst, kind
-  )
-)
-GROUP BY ts, kind
-ORDER BY ts
-```
-
-</details>
+## Request traffic
 
 ### Request rate & errors (traces) — line
 

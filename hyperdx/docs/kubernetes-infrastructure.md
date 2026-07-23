@@ -323,7 +323,7 @@ ORDER BY agg.cpu DESC
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT countIf(phase != 2) AS "Not running" FROM (
+SELECT countIf(phase NOT IN (2, 3)) AS "Not running" FROM (
   SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})

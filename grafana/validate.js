@@ -34,11 +34,22 @@ async function run(sql, queryType, format) {
   return { ok: true, frames: frames.length, rows };
 }
 
+// Walk dashboards/ recursively so every tier (top-level + advanced/) is validated.
+function listDashboards(root) {
+  const out = [];
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const full = path.join(root, entry.name);
+    if (entry.isDirectory()) out.push(...listDashboards(full));
+    else if (entry.name.endsWith('.json')) out.push(full);
+  }
+  return out.sort();
+}
+
 (async () => {
   let fail = 0;
-  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
-    const dash = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-    console.log('\n=== ' + f + ' ===');
+  for (const full of listDashboards(dir)) {
+    const dash = JSON.parse(fs.readFileSync(full, 'utf8'));
+    console.log('\n=== ' + path.relative(dir, full).replace(/\\/g, '/') + ' ===');
     // Validate template variable queries
     for (const v of (dash.templating && dash.templating.list) || []) {
       if (v.type === 'query' && v.query && v.query.rawSql) {
