@@ -1,0 +1,135 @@
+# =============================================================================
+# OpenTelemetry Collector — ClickHouse + collector self-metrics scraper
+# =============================================================================
+# Optional add-on for the AzureLocal-Observability-Appliance (and any ClickStack
+# deploy that uses the mTLS ingest model). The stock appliance ingest collector is
+# OTLP-only and NOTHING scrapes ClickHouse's :9363 Prometheus endpoint or the
+# collector's :8888 self-telemetry — so the ADVANCED dashboards that need those
+# metrics stay dark. This collector fills exactly that gap:
+#
+#   * ClickHouse  :9363  ->  ClickHouseProfileEvents_* / ClickHouseMetrics_* / ...
+#                            (ClickHouse — Operations / Query Performance / Keeper)
+#   * Collector   :8888  ->  otelcol_*_total / otelcol_exporter_queue_* / ...
+#                            (OTel Collector — Pipeline Health)
+#
+# It writes NOTHING to ClickHouse directly. It forwards scraped metrics via
+# OTLP/gRPC (:4317) over mutual TLS to the ClickStack central collector — the
+# SAME ingest path the appliance's own kube-telemetry collectors use — presenting
+# an enrolled internal-emitter leaf that is leaf-pinned in the trust-manager
+# allow-list bundle. The central collector then persists them to the same
+# `default.otel_metrics_{gauge,sum}` tables the dashboards read.
+#
+# `install-collector.ps1` / `.sh` substitute the __PLACEHOLDER__ tokens below and
+# run `helm upgrade --install` against the upstream opentelemetry-collector chart
+# (the exact chart + contrib image the appliance already uses for kube-telemetry).
+# =============================================================================
+
+mode: deployment
+replicaCount: 1
+
+image:
+  # contrib distro — the prometheus receiver + full metric set live here (matches
+  # the image the appliance uses for its kube-telemetry collectors).
+  repository: otel/opentelemetry-collector-contrib
+
+# Pure egress scraper: it never receives OTLP. Drop the chart's default inbound
+# ports so no plaintext receiver/Service is exposed in-cluster.
+ports:
+  otlp:
+    enabled: false
+  otlp-http:
+    enabled: false
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
+  metrics:
+    enabled: false
+
+# Mount an enrolled internal-emitter client cert (tls.crt/tls.key/ca.crt) so the
+# OTLP exporter authenticates to the central collector over mTLS. ca.crt verifies
+# the collector's server cert; the emitter leaf is leaf-pinned in the allow-list.
+extraVolumes:
+  - name: otel-client-certs
+    secret:
+      secretName: __EMITTER_SECRET__
+extraVolumeMounts:
+  - name: otel-client-certs
+    mountPath: /etc/otel/certs
+    readOnly: true
+
+# Keep the pod light — it only scrapes two endpoints every 30s.
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+config:
+  receivers:
+    prometheus:
+      config:
+        scrape_configs:
+          # --- ClickHouse native Prometheus endpoint (:9363) -------------------
+          # dns_sd enumerates every ClickHouse pod behind the headless service as a
+          # distinct target, so counter series stay stable per replica.
+          - job_name: clickhouse
+            scrape_interval: 30s
+            scheme: __CH_SCHEME__
+            metrics_path: /metrics
+            dns_sd_configs:
+              - names:
+                  - __CH_TARGET__
+                type: A
+                port: __CH_METRICS_PORT__
+          # >>> otelcol job (removed by -SkipCollectorMetrics / --skip-collector-metrics)
+          # --- ClickStack central collector self-telemetry (:8888) -------------
+          - job_name: otelcol
+            scrape_interval: 30s
+            scheme: http
+            metrics_path: /metrics
+            static_configs:
+              - targets:
+                  - __COLLECTOR_METRICS_TARGET__
+          # <<< otelcol job
+
+  processors:
+    batch: {}
+
+  exporters:
+    # Forward to the central collector's native mTLS OTLP/gRPC receiver (:4317),
+    # presenting our enrolled emitter leaf. Mirrors the appliance kube-telemetry
+    # exporter (ca/cert/key paths, hot-reload, retry + queue for leaf rotation).
+    otlp:
+      endpoint: "__OTLP_ENDPOINT__"
+      tls:
+        insecure: false
+        ca_file: /etc/otel/certs/ca.crt
+        cert_file: /etc/otel/certs/tls.crt
+        key_file: /etc/otel/certs/tls.key
+        reload_interval: 60s
+      compression: gzip
+      retry_on_failure:
+        enabled: true
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 600s
+      sending_queue:
+        enabled: true
+        queue_size: 5000
+
+  service:
+    pipelines:
+      # Only metrics. receivers/processors/exporters are LIST values, so these
+      # replace the chart defaults for this pipeline (idle default traces/logs
+      # pipelines are harmless — no receiver ports are exposed).
+      metrics:
+        receivers: [prometheus]
+        processors: [batch]
+        exporters: [otlp]

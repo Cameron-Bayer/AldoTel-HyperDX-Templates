@@ -27,6 +27,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 | At-a-glance **Grafana boards** on any Grafana | Grafana UI import | [`grafana/README.md`](grafana/README.md) |
 | **Durable install** on ClickStack's bundled Grafana (Kubernetes) | Grafana ConfigMap provisioning | [`grafana/kubernetes/README.md`](grafana/kubernetes/README.md) |
 | Grafana **alerts without filesystem access** (Grafana Cloud) | Terraform | [`grafana/alerting/terraform/`](grafana/alerting/terraform/README.md) |
+| Light up the **advanced ClickHouse / collector** boards on the appliance | Deploy the metrics scraper | [`collector/README.md`](collector/README.md) |
 
 ---
 
@@ -56,6 +57,12 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── gen-dashboards.js         Generates the dashboard JSON
 │   ├── validate.js               Validates panel SQL against live ClickHouse
 │   └── docker-compose.yml        Throwaway Grafana for authoring/preview
+│
+├── collector/                  🔌 Optional metrics scraper (appliance advanced-tier enabler)
+│   ├── README.md                 Why/how + install flow
+│   ├── otel-metrics-collector-values.yaml   Helm values (ClickHouse :9363 + collector :8888 → OTLP/mTLS)
+│   ├── emitter-cert.yaml         Optional dedicated cert-manager emitter identity
+│   └── install-collector.ps1 / install-collector.sh   Idempotent helm install (+ uninstall)
 │
 ├── CONTRIBUTING.md              Maintainer guide (generators, validation, dev harness)
 ├── CHANGELOG.md · VERSION

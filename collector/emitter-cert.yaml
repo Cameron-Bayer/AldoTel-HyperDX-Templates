@@ -1,0 +1,47 @@
+# =============================================================================
+# Dedicated internal-emitter certificate for the metrics scraper (OPTIONAL)
+# =============================================================================
+# Applied only when install-collector is run with -CreateDedicatedCert /
+# --create-dedicated-cert. It gives the scraper its OWN mTLS client identity
+# instead of reusing an existing emitter secret.
+#
+# How it lights up ingest, with NO edits to the appliance chart:
+#   * issuerRef -> clickstack-ca-issuer  (the appliance's internal CA Issuer — a
+#     stable literal-named contract, present in every ClickStack namespace).
+#   * label aldotel.io/internal-emitter: "true" -> trust-manager automatically
+#     folds this leaf's PUBLIC cert into the internal allow-list bundle
+#     (bundle.crt = the central collector's client_ca_file), so the otlp/hyperdx
+#     receiver accepts it. Allow-list refresh takes up to ~60s after issuance.
+#   * usages include `client auth` — REQUIRED: the mTLS receiver applies a
+#     client-purpose EKU check.
+#
+# __NAMESPACE__ is substituted by the installer.
+# =============================================================================
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: clickstack-emitter-dashboards-scraper
+  namespace: __NAMESPACE__
+spec:
+  secretName: clickstack-emitter-dashboards-scraper-secret
+  secretTemplate:
+    labels:
+      # trust-manager selects this label to enroll the leaf in the allow-list.
+      aldotel.io/internal-emitter: "true"
+  duration: 8760h      # 1y
+  renewBefore: 720h    # 30d
+  subject:
+    organizations:
+      - AldOTel
+  commonName: clickstack-emitter-dashboards-scraper
+  usages:
+    - client auth
+    - digital signature
+    - key encipherment
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: clickstack-ca-issuer
+    kind: Issuer
+    group: cert-manager.io
